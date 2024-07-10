@@ -1,15 +1,18 @@
 const express = require('express');
 const app = express();
-//const multer = require('multer');
-//const upload = multer();
 const port = 3000;
 const mongoose = require('mongoose');
+const exphbs = require('express-handlebars');
+const path = require('path');
 
+app.engine('hbs', exphbs.engine({
+    extname : ".hbs",
+    partialsDir : path.join(__dirname,"views",'partials'),
+    layoutDir : path.join(__dirname,'views','layouts')
+}));
 
 app.set('view engine','hbs');
-app.set('views','./views');
-
-//app.set(upload.array());
+app.set('views',path.join(__dirname,'views'));;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
