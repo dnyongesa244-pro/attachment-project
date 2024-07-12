@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {{>header}}
+
+    <table>
+        <form action="/additem" method="post" enctype="multipart/form-data">
+            <tr>
+                <th><label for="foodtem">food name</label></th>
+                <td><input type="text" name="fooditem"></td>
+            </tr>
+            <br>
+            <br>
+            <tr>
+                <th><label for="price">price</label></th>
+                <td><input type="Number" name="price"></td>
+            </tr>
+            <br>
+            <br>
+            <tr>
+                <th><label for="delTime">Delivery time</label></th>
+                <td><input type="text" name="delTime"></td>
+            </tr>
+            <br>
+            <br>
+            <tr>
+                <th><label for="image">Image</label></th>
+                <th><input type="file" name="image" accept="image/*"></th>
+            </tr>
+            <br>
+            <br>
+            <tr>
+                <th><button type="submit">Add</button></th>
+                <th><button type="reset">Reset</button></th>
+            </tr>
+        </form>
+    </table>
+
+    {{>footer}}
+</body>
+</html>

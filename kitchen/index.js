@@ -4,6 +4,11 @@ const port = 3000;
 const mongoose = require('mongoose');
 const exphbs = require('express-handlebars');
 const path = require('path');
+const hbs = require('hbs');
+const multer = require('multer');
+//const { type } = require('os');
+const storage = multer.memoryStorage();
+const upload = multer();
 
 app.engine('hbs', exphbs.engine({
     extname : ".hbs",
@@ -15,6 +20,7 @@ app.set('view engine','hbs');
 app.set('views',path.join(__dirname,'views'));;
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(express.static(path.join(__dirname,'public')));
 
 //setting upp mongodb database connection
 mongoose.connect('mongodb://localhost:27017/kitchen')
@@ -137,13 +143,79 @@ app.post('/login',async(req, res)=>{
         try{
             const check = await staff.findOne({password : personInfo.password,username : personInfo.username});
             if(check && check.password=== personInfo.password && check.username === personInfo.username){
-                res.render('home');
+                res.redirect('/home');
             } else{
                 res.send('incorect username or password');
             }
         } catch(err){
             console.log(err);
             res.status(500).send('internal server error');
+        }
+    }
+});
+
+app.get('/home',(req, res)=>{
+    res.render('home');
+})
+//defingin schema for order items
+const orderItemsSchema = mongoose.Schema({
+    name : {
+        type : String,
+        required : true
+    },
+
+    price : {
+        type : Number,
+        required : true
+    },
+    delTime : {
+        type : String,
+        required : true
+    },
+    image : {
+        data : Buffer,
+        constentType : String,
+    }
+});
+
+const orderItems = mongoose.model('orderItems',orderItemsSchema);
+
+//defingin collections for order items
+app.get('/additem',(req, res)=>{
+    res.render('add');
+});
+
+app.post('/additem', upload.single('image'),async(req, res)=>{
+    const orderItemsInfo = req.body;
+    const image = req.file;
+    if(!orderItemsInfo.name||orderItemsInfo.price|| !orderItemsInfo.delTime|| !image){
+        //res.status(400).send('please submit valid imaformation');
+        if(!orderItems.name){
+            res.send('inavalid name');
+        } else if(!orderItems.price){
+            res.send('invalid price');
+        } else if(!orderItems.delTime){
+            res.send('invalid ordr time');
+        } else if(!image){
+            res.send('invalid image');
+        }
+    } else{
+        const newOrderItems = new orderItems({
+            name : orderItems.foodtem,
+            price : orderItems.price,
+            delTime : orderItems.delTime,
+            image : {
+                data : image.buffer,
+                constentType : image.mimetype
+            }
+        })
+
+        try{
+            await newOrderItems.save('');
+            res.render('submitted');
+        } catch(err){
+            console.log(err);
+            res.status(500).send('Internal server error');
         }
     }
 });
