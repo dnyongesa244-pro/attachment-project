@@ -154,27 +154,19 @@ app.post('/login',async(req, res)=>{
     }
 });
 
-app.get('/home',(req, res)=>{
-    res.render('home');
-})
 //defingin schema for order items
-const orderItemsSchema = mongoose.Schema({
-    name : {
+const orderItemsSchema = new mongoose.Schema({
+    name: {
         type : String,
         required : true
     },
-
-    price : {
+    price: {
         type : Number,
         required : true
     },
-    delTime : {
-        type : String,
-        required : true
-    },
-    image : {
-        data : Buffer,
-        constentType : String,
+    image: {
+        data: Buffer,
+        contentType: String
     }
 });
 
@@ -185,37 +177,53 @@ app.get('/additem',(req, res)=>{
     res.render('add');
 });
 
-app.post('/additem', upload.single('image'),async(req, res)=>{
+//adddind of food item
+app.post('/upload', upload.single('image'), async (req, res) => {
     const orderItemsInfo = req.body;
     const image = req.file;
-    if(!orderItemsInfo.name||orderItemsInfo.price|| !orderItemsInfo.delTime|| !image){
-        //res.status(400).send('please submit valid imaformation');
-        if(!orderItems.name){
-            res.send('inavalid name');
-        } else if(!orderItems.price){
-            res.send('invalid price');
-        } else if(!orderItems.delTime){
-            res.send('invalid ordr time');
-        } else if(!image){
-            res.send('invalid image');
-        }
-    } else{
+
+    if (!image || !orderItemsInfo.name || !orderItemsInfo.price) {
+        res.status(400).send('Please submit a valid file and provide product name and price');
+    } else {
         const newOrderItems = new orderItems({
-            name : orderItems.foodtem,
-            price : orderItems.price,
-            delTime : orderItems.delTime,
-            image : {
-                data : image.buffer,
-                constentType : image.mimetype
+            name: orderItemsInfo.name,
+            price: orderItemsInfo.price,
+            image: {
+                data: image.buffer,
+                contentType: image.mimetype
+            }
+        });
+
+        try {
+            await newOrderItems.save();
+            res.status(200).send('Product saved successfully');
+        } catch (err) {
+            res.status(500).send('An error occurred');
+            console.log(err);
+        }
+    }
+});
+
+
+app.get('/home', async(req, res)=>{
+    try {
+        const products = await orderItems.find({});
+        const productsWithBase64Images = products.map(orderItem=>{
+            if(orderItem.image && orderItem.image.data && orderItem.image.contentType){
+                return {
+                    ...orderItem._doc,
+                    image : {
+                        data : orderItem.image.data.toString('base64'),
+                        contentType : orderItem.image.constentType
+                    }
+                }
+            } else {
+                return orderItem._doc
             }
         })
-
-        try{
-            await newOrderItems.save('');
-            res.render('submitted');
-        } catch(err){
-            console.log(err);
-            res.status(500).send('Internal server error');
-        }
+        res.render('home', {products : productsWithBase64Images});
+    } catch(err){
+        console.log('an error occured', err);
+        res.status(500).send('Error occured');
     }
 });

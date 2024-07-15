@@ -1,0 +1,11 @@
+<div id="products">
+        {{#each products}}
+        <div class="product">
+            {{#if this.image}}
+            <img src="data:{{this.image.contentType}};base64,{{this.image.data}}" alt="{{this.name}}" />
+            {{/if}}
+            <h2>{{this.name}}</h2>
+            <p>Price: ${{this.price}}</p>
+        </div>
+        {{/each}}
+    </div>
