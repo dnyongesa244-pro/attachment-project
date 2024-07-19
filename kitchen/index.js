@@ -12,6 +12,7 @@ const upload = multer({ storage });
 const mongoStore = require('connect-mongo')
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
+const { type } = require('os');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
@@ -128,7 +129,7 @@ app.post('/login', async (req, res) => {
         res.send('Please enter the valid details');
     } else {
         try {
-            const check = await staff.findOne({ username: personInfo.username, password: personInfo.password });
+            const check = await staff.findOne({ username: personInfo.username, password : personInfo.password});
             if (check) {
                 req.session.userId = check._id;
                 res.redirect('/home');
@@ -206,3 +207,86 @@ app.get('/home', isAutaumticated, async (req, res) => {
         res.status(500).send('Error occurred');
     }
 });
+
+
+//order items schema
+const ordersSchema = mongoose.Schema({
+    name : {
+        type : String,
+        required : true
+    },
+    dept : {
+        type : String,
+        required : true
+    },
+    item : {
+        type : String,
+        required : true
+    },
+    price : {
+        type : Number,
+    },
+    status : {
+        type : String,
+        required : true
+    }
+});
+
+const orders = mongoose.model('orders', ordersSchema);
+
+app.post('/orders', isAutaumticated, async(req, res)=>{
+    const ordersInfo = req.body;
+    console.log(ordersInfo)
+    if(!ordersInfo.name || !ordersInfo.price){
+        res.send('invalid order');
+    } else{
+        const loginUserId = req.session.userId;
+        if(loginUserId){
+            try{
+                const loginUser = await staff.findById(loginUserId);
+                if(loginUser){
+                    const newOrders = new orders({
+                        name : loginUser.fname + " "+loginUser.lname,
+                        dept : loginUser.dept,
+                        item : ordersInfo.name,
+                        price : ordersInfo.price,
+                        status : "pending",
+                    });
+                    
+                    try{
+                        await newOrders.save();
+                        res.send('order submited successfuly');
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send('and error ocurred');
+                    }
+                } else{
+                    res.send('User not found');
+                }
+            } catch(err){
+                console.log(err);
+                res.send('an error occured');
+            }
+        } else{
+            res.send('user not loged in');
+        }
+    }
+})
+
+app.get('/myorders', isAutaumticated, async(req, res)=>{
+     const loginUserId = req.session.userId;
+     if(loginUserId){
+        try{
+            const loginUser = await orders.findById(loginUserId);
+            if(loginUser){
+                console.log(loginUser);
+                res.send('succes')
+            } else{
+                res.send('user not found');
+            }
+        } catch(err){
+            console.log(err);
+            res.status(500).send('internal server error');
+        }
+     }
+})

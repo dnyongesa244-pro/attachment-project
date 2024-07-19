@@ -4,20 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="../public/css/style.css">
 </head>
 <body>
     {{>header}}
-        <div class="products">
-        {{#each products}}
-          <div class="product">
-            {{#if this.image}}
-             <img src="data:{{this.image.contentType}};base64,{{this.image.data}}" alt="{{this.name}}">
-            {{/if}}
-            <h2>{{this.name}}</h2>
-            <p>Price: ${{this.price}}</p>
-        </div>
-        {{/each}}
-</div>
+        
+    {{>body}}
 
     {{>footer}}
 </body>
