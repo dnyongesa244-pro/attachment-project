@@ -1,0 +1,9 @@
+<div class="orders">
+    {{#each products}}
+     <div class="order">
+        <h3>Name : {{this.item}}</h3>
+        <p>price : {{this.price}}</p>
+        <p>status : {{this.status}}</p>
+     </div>
+     {{/each}}
+</div>

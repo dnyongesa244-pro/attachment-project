@@ -72,4 +72,15 @@
     }
   }
   
-  
+  .orders {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .order{
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 10px;
+    width: 200px;
+    box-sizing: border-box;
+  }

@@ -13,11 +13,16 @@ const mongoStore = require('connect-mongo')
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const { type } = require('os');
+const { title } = require('process');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
     partialsDir: path.join(__dirname, "views", 'partials'),
-    layoutsDir: path.join(__dirname, 'views', 'layouts')
+    layoutsDir: path.join(__dirname, 'views', 'layouts'),
+    runtimeOptions : {
+        allowProtoMethodsByDefault : true,
+        allowProtoPropertiesByDefault : true
+    }
 }));
 
 app.set('view engine', 'hbs');
@@ -215,6 +220,10 @@ const ordersSchema = mongoose.Schema({
         type : String,
         required : true
     },
+    username : {
+        type : String,
+        required : true
+    },
     dept : {
         type : String,
         required : true
@@ -247,6 +256,7 @@ app.post('/orders', isAutaumticated, async(req, res)=>{
                 if(loginUser){
                     const newOrders = new orders({
                         name : loginUser.fname + " "+loginUser.lname,
+                        username : loginUser.username,
                         dept : loginUser.dept,
                         item : ordersInfo.name,
                         price : ordersInfo.price,
@@ -274,19 +284,30 @@ app.post('/orders', isAutaumticated, async(req, res)=>{
 })
 
 app.get('/myorders', isAutaumticated, async(req, res)=>{
-     const loginUserId = req.session.userId;
-     if(loginUserId){
-        try{
-            const loginUser = await orders.findById(loginUserId);
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try {
+            const loginUser = await staff.findById(loginUserId);
             if(loginUser){
-                console.log(loginUser);
-                res.send('succes')
+                try{
+                    const products = await orders.find({username : loginUser.username})
+                    console.log(products);
+                    res.render('myorders', {
+                        title : "my orders",
+                        products : products
+                    })
+                } catch(err){
+                    console.log(err);
+                    res.status(500).send("Internal server error");
+                }
             } else{
                 res.send('user not found');
             }
         } catch(err){
             console.log(err);
-            res.status(500).send('internal server error');
+            res.status(500).send('Internal server error');
         }
-     }
+    } else{
+        res.send('user not loged in')
+    }
 })
