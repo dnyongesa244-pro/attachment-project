@@ -84,3 +84,8 @@
     width: 200px;
     box-sizing: border-box;
   }
+
+  .ward nav{
+    height: max-content;
+    background: blueviolet;
+  }

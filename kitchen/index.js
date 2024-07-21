@@ -38,10 +38,10 @@ app.use(session({
         mongoUrl : "mongodb://localhost:27017/kitchen",
         collectionName : "sessions"
     }),
-    cookie : {maxAge : 24*60*60*1000}
+    cookie : {maxAge : 24*60*60*6.9444}
 }))
 
-function isAutaumticated(req, res, next){
+function isAuthenticated(req, res, next){
     if(req.session.userId){
         return next();
     } else{
@@ -77,77 +77,90 @@ const personSchema = new mongoose.Schema({
 const staff = mongoose.model('staff', personSchema);
 
 // Getting the add new user page
-app.get('/addNew',isAutaumticated, (req, res) => {
-    res.render('addNew');
+app.get('/registernew',isAuthenticated, (req, res) => {
+    res.render('registerstaff');
 });
 
 // Posting the new user to the database
-app.post('/addnew', isAutaumticated, async (req, res) => {
+app.post('/registernew', isAuthenticated, async (req, res) =>{
     const personInfo = req.body;
+    console.log(personInfo);
+    if (!personInfo.fname || !personInfo.lname || !personInfo.username || !personInfo.dept || !personInfo.password){
+            res.send('Please enter valid details');
+        } else {
+            const loginUserId = req.session.userId;
+            if(loginUserId){ 
+                try {
+                    const loginUser = await staff.findById(loginUserId);
+                    if(loginUser.role== 'admin')  {
+                        const check = await staff.findOne({ username: personInfo.username });
+                        if (check) {
+                            res.send('User already exists');
+                       } else {
+                            const newPerson = new staff({
+                                fname: personInfo.fname,
+                                sname: personInfo.sname,
+                                lname: personInfo.lname,
+                                username: personInfo.username,
+                                dept: personInfo.dept,
+                                email: personInfo.email,
+                                phoneNo: personInfo.phoneNo,
+                                role: personInfo.role,
+                                password: personInfo.password
+                            });
+                            try {
+                                await newPerson.save();
+                                res.send('New person added successfully');
+                            } catch (err){
+                                console.log(err);
+                                res.status(500).send('Internal server error');
+                            }
+                        }
+                    } else{
+                        res.send('you have no permition to register new users: '+loginUser.role);
+                        console.log(loginUser)
+                    }   
+                } catch(err){
+                    console.log(err);
+                    res.status(500).send('internal server errror');
+                }  
 
-    if (!personInfo.fname || !personInfo.lname || !personInfo.username || !personInfo.dept || !personInfo.email || !personInfo.password || !personInfo.phoneNo || !personInfo.role) {
-        res.send('Please enter correct information');
-    } else {
-        try {
-            const check = await staff.findOne({ $or: [{ username: personInfo.username }, { email: personInfo.email }] });
-            if (check) {
-                if (check.username === personInfo.username && check.email === personInfo.email) {
-                    res.send(`User with username: ${check.username} and email: ${check.email} already exist`);
-                } else if (check.username === personInfo.username) {
-                    res.send(`Username: ${check.username} already exists, please try a different username`);
-                } else if (check.email === personInfo.email) {
-                    res.send(`User with email: ${check.email} already exists`);
-                }
-            } else {
-                const newPerson = new staff({
-                    fname: personInfo.fname,
-                    sname: personInfo.sname,
-                    lname: personInfo.lname,
-                    username: personInfo.username,
-                    dept: personInfo.dept,
-                    email: personInfo.email,
-                    phoneNo: personInfo.phoneNo,
-                    role: personInfo.role,
-                    password: personInfo.password
-                });
-
-                await newPerson.save();
-                res.send('New user created successfully');
+            } else{
+                res.send('user not logged in');
             }
-        } catch (err) {
-            console.log(err);
-            res.status(500).send('An error occurred');
-        }
-    }
+        }     
 });
 
-// Displaying login form
-app.get('/login', (req, res) => {
-    res.render('login');
-});
+//rout for login page
+app.get('/login', async(req, res)=>{
+    res.render('login',{
+        title : "Login"
+    })
+})
 
-// Verifying login and opening of home page
-app.post('/login', async (req, res) => {
-    const personInfo = req.body;
-
-    if (!personInfo.username || !personInfo.password) {
-        res.send('Please enter the valid details');
-    } else {
-        try {
-            const check = await staff.findOne({ username: personInfo.username, password : personInfo.password});
-            if (check) {
+app.post('/login', async(req, res)=>{
+    const staffInfo = req.body;
+    var count = 1;
+    console.log(count + " " +staffInfo);
+    count++;
+    if(!staffInfo.password || !staffInfo.username){
+        res.status(400).send('invalid or incomplete details');
+        console.log(count + " " + staffInfo);
+    count++;
+    } else{
+        try{
+            const check = await staff.findOne({username: staffInfo.username, password: staffInfo.password});
+            if(check){
                 req.session.userId = check._id;
                 res.redirect('/home');
-            } else {
-                res.send('Incorrect username or password');
-            }
-        } catch (err) {
+            } else{
+                res.send("invalid Username or password");            }
+        } catch(err){
             console.log(err);
-            res.status(500).send('Internal server error');
+            res.status(err).send('Internall server error')
         }
     }
-});
-
+})
 // Defining schema for order items
 const orderItemsSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -158,12 +171,12 @@ const orderItemsSchema = new mongoose.Schema({
 const orderItems = mongoose.model('orderItems', orderItemsSchema);
 
 // Defining collections for order items
-app.get('/additem',isAutaumticated, (req, res) => {
+app.get('/additem',isAuthenticated, (req, res) => {
     res.render('add');
 });
 
 // Adding of food item
-app.post('/upload',isAutaumticated, upload.single('image'), async (req, res) => {
+app.post('/upload', isAuthenticated, upload.single('image'), async (req, res) => {
     const orderItemsInfo = req.body;
     const image = req.file;
 
@@ -190,7 +203,7 @@ app.post('/upload',isAutaumticated, upload.single('image'), async (req, res) => 
 });
 
 // Rendering home page with products
-app.get('/home', isAutaumticated, async (req, res) => {
+app.get('/home', isAuthenticated, async (req, res) => {
     try {
         const products = await orderItems.find({});
         const productsWithBase64Images = products.map(orderItem => {
@@ -243,7 +256,7 @@ const ordersSchema = mongoose.Schema({
 
 const orders = mongoose.model('orders', ordersSchema);
 
-app.post('/orders', isAutaumticated, async(req, res)=>{
+app.post('/orders', isAuthenticated, async(req, res)=>{
     const ordersInfo = req.body;
     console.log(ordersInfo)
     if(!ordersInfo.name || !ordersInfo.price){
@@ -283,7 +296,7 @@ app.post('/orders', isAutaumticated, async(req, res)=>{
     }
 })
 
-app.get('/myorders', isAutaumticated, async(req, res)=>{
+app.get('/myorders', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
         try {
@@ -309,5 +322,86 @@ app.get('/myorders', isAutaumticated, async(req, res)=>{
         }
     } else{
         res.send('user not loged in')
+    }
+})
+
+//method to render the wards page
+app.get('/ward', isAuthenticated,(req, res)=>{
+    res.render('ward');
+});
+
+//
+app.get('/addpatient', isAuthenticated, (req, res)=>{
+    res.render('addpatient', {
+        title : "Register patent"
+    })
+})
+
+const patientSchema = mongoose.Schema({
+    fname : {
+        type : String,
+        required : true
+    }, lname : {
+        type : String,
+        required : true
+    },
+    patientNo : {
+        type : String,
+        required : true
+    },
+    regestry : {
+        type : String,
+        required : true,
+    }
+})
+
+const patient = mongoose.model('patient',patientSchema);
+
+
+app.post('/addpatient', isAuthenticated, async(req, res)=>{
+    const patientInfo = req.body;
+    if(!patientInfo.fname || !patientInfo.lname || !patientInfo.patientNo){
+        res.send('invaid or incomplete details please try again');
+    } else{
+        try{
+            const check = await staff.findOne({patientNo : patientInfo.patientNo});
+            if(check){
+                res.send('patient already exist');
+            } else{
+                const loginUserId = req.session.userId;
+                if(loginUserId){
+                    try{
+                        const loginUser = await person.findById(loginUserId);
+                        if(loginUser){
+                           // res.send(loginUser.fname + " "+loginUser.lname);
+                           const newPatient = new patient({
+                            fname : patientInfo.fname,
+                            lname : patientInfo.lname,
+                            patientNo : patientInfo.patientNo,
+                            regestry : loginUser.fname + " "+loginUser.lname
+                            });
+
+                           try{
+                            await newPatient.save();
+                                 res.send('patient registered succesfuly');
+                            } catch(err){
+                                 console.log(err);
+                                 res.status(500).send('am error ocured');
+                            }
+                        } else{
+                            res.send("User not found");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send('Internal server error');
+                    }
+                } else{
+                    res.send("User not loged in");
+                }
+            } 
+        } catch(err){
+            console.log(err);
+            res.status(500).send('Internal server error');
+        }
     }
 })

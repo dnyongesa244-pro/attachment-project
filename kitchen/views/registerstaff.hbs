@@ -6,8 +6,8 @@
     <title>Document</title>
 </head>
 <body>
-    <div>
-        <form action="addNew" method="post">
+    {{>header}}
+        <form action="/registernew" method="post">
             <table>
                 <tr>
                     <th><label for="fname">First name</label></th>
@@ -63,10 +63,9 @@
                 <br>
                 <tr>
                     <th><button type="submit">Save</button></th>
-                    <th><button><a href="/home">home</a></button></th>
+                    <th><button type="reset"><a href="reset">home</a></button></th>
                 </tr>
             </table>
         </form>
-    </div>
 </body>
 </html>
