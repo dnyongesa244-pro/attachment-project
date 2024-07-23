@@ -15,7 +15,7 @@ const cookieParser = require('cookie-parser');
 const { type } = require('os');
 const { title } = require('process');
 const { METHODS } = require('http');
-const { warn } = require('console');
+const { warn, assert } = require('console');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
@@ -298,7 +298,7 @@ app.get('/myorders', isAuthenticated, async(req, res)=>{
             const loginUser = await staff.findById(loginUserId);
             if(loginUser){
                 try{
-                    const products = await orders.find({username : loginUser.username})
+                    const products = await orders.find({username : loginUser.username, status : 'pending'})
                     res.render('myorders', {
                         title : "my orders",
                         products : products
@@ -575,6 +575,7 @@ app.get('/addmeal', isAuthenticated,(req, res)=>{
     });
 });
 
+
 app.get('/deletemeal', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
@@ -613,3 +614,119 @@ app.get('/deletemeal', isAuthenticated, async(req, res)=>{
         }
     }
 })
+
+app.get('/viewpedingordsers', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try {
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser){
+                if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                    const products = await orders.find({status : "pending"});
+                    console.log(products)
+                    res.render('pending', {
+                        products : products
+                    })
+                } else {
+                    res.render("You have no permition to acces this page");
+                }
+            } else{
+                res.render("user not found");
+            }
+        } catch(err){
+            console.log(err);
+            res.status(500).render("Internal server error");
+        }
+    } else{
+        res.send("User not logged in");
+    }
+});
+
+app.get('/patients', isAuthenticated, async(req, res)=>{
+    
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try{
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                try {
+                    const patientDetails = await patient.find({ward : loginUser.dept});
+                    var count = 0;
+                    patientDetails.forEach(element=>{
+                        count++;
+                    })
+                    res.render('patients', {
+                        details : patientDetails,
+                        total : count,
+                        ward : loginUser.dept
+                    })
+                } catch(err){
+                    console.log(err);
+                    res.status(500).send('Internal server error');
+                }
+            } else{
+                res.send('User not found');
+            }
+        }catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    } else{
+        res.send("User not found");
+    }
+});
+
+app.post('/concledorders', isAuthenticated, async(req, res)=>{
+    const ordersInfo = req.body.id;
+    if(!ordersInfo){
+        res.send("An error occured");
+    } else{
+        try {
+            const order = await orders.findById(ordersInfo);
+            if(!order){
+                res.status(404).send("Order not found");
+            } else{
+                order.status = "councled";
+                try {
+                    await order.save();
+                    res.send("order councled succesfuly");
+                } catch(err){
+                    console.log(err);
+                    res.status(500).send("Internal server error");
+                }
+            }
+        } catch(err){
+            console.log(err);
+            res.send("Internal server error");
+        }
+    }
+})
+
+app.get('/concledorders', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try{
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser){
+                try {
+                    const product = await orders.find({username : loginUser.username , status : 'councled'});
+                    res.render('councledOrders', {
+                        products : product
+                    })
+                } catch(err){
+                    console.log(err);
+                    res.status(500).send("Internal server error");
+                }
+            } else {
+                res.send("User not found");
+            }
+        } catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error")
+        }
+    } else{
+        res.send("user not loged in");
+    }
+});
+
+//app.post('pendings')

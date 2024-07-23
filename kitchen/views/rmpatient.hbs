@@ -7,7 +7,10 @@
 </head>
 <body>
     {{>header}}
-    <table>
+    <div class="container">
+        {{>wardnav}}
+        <div class="content">
+            <table>
         <form action="/cleare" method="post">
             <tr>
                 <th><label for="name">Name(s)</label></th>
@@ -27,5 +30,7 @@
             </tr>
         </form>
     </table>
+        </div>
+    </div>
 </body>
 </html>

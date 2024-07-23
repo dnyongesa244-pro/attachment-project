@@ -7,7 +7,10 @@
 </head>
 <body>
     {{>header}}
-    <form action="/clearpatient" method="post">
+    <div class="container">
+        {{>wardnav}}
+        <div class="content">
+            <form action="/clearpatient" method="post">
         <table>
             <tr>
                 <td><label for="patientNo">Enter patientNo</label></td>
@@ -18,5 +21,7 @@
             </tr>
         </table>
     </form>
+        </div>
+    </div>
 </body>
 </html>

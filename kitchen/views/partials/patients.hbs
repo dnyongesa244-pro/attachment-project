@@ -1,0 +1,21 @@
+<div >
+    <table>
+        <h3>Available {{this.ward}} patients</h3>
+        <tr>
+            <th><label for="">Name</label></th>
+            <th><label for="PatientNo">PatientNo</label></th>
+        </tr>
+        {{#each details}}
+          <tr>
+            <th><input type="text" name="name" value="{{this.fname}} {{this.lname}}" readonly></th>
+            <th><input type="text" name="PatientNo" value="{{patientNo}}" readonly></th>
+           <!-- <th>
+                <form action="/clear" method="post">
+                 <input type="hidden" name="id" id="id" value="{{this.id}}">
+                 <button type="submit">Clear</button>
+            </form>
+            </th>-->
+        {{/each}}  
+    </table>
+    <h2>total : {{this.total}}</h2>
+</div>
