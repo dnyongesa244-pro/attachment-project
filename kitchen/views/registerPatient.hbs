@@ -3,9 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>{{title}}</title>
 </head>
 <body>
-    {{>body}}
+    {{>header}}
+    <div class="container">
+        {{>kitchennav}}
+        <div class="content">
+                <table>
+                   <form action="/addpatient" method="post">
+            <tr>
+                <th><label for="fname">First name</label></th>
+                <td><input type="text" name="fname"></td>
+            </tr>
+            <tr>
+                <th><label for="lname">Last name</label></th>
+                <td><input type="text" name="lname"></td>
+            </tr>
+            <tr>
+                <th><label for="patientNo">PatientNo</label></th>
+                <td><input type="text" name="patientNo"></td>
+            </tr>
+            <tr>
+                <th><label for="ward">ward</label></th>
+                <td><input type="text" name="ward" value="{{ward}}" readonly required></td>
+
+            </tr>
+            <tr>
+                <th><button type="submit">Submit</button></th>
+                <th><button type="reset">Reset</button></th>
+            </tr>
+            
+        </form>
+    </table>
+        </div>
+    </div>
 </body>
 </html>

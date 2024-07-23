@@ -14,6 +14,8 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const { type } = require('os');
 const { title } = require('process');
+const { METHODS } = require('http');
+const { warn } = require('console');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
@@ -84,7 +86,6 @@ app.get('/registernew',isAuthenticated, (req, res) => {
 // Posting the new user to the database
 app.post('/registernew', isAuthenticated, async (req, res) =>{
     const personInfo = req.body;
-    console.log(personInfo);
     if (!personInfo.fname || !personInfo.lname || !personInfo.username || !personInfo.dept || !personInfo.password){
             res.send('Please enter valid details');
         } else {
@@ -118,7 +119,6 @@ app.post('/registernew', isAuthenticated, async (req, res) =>{
                         }
                     } else{
                         res.send('you have no permition to register new users: '+loginUser.role);
-                        console.log(loginUser)
                     }   
                 } catch(err){
                     console.log(err);
@@ -140,13 +140,8 @@ app.get('/login', async(req, res)=>{
 
 app.post('/login', async(req, res)=>{
     const staffInfo = req.body;
-    var count = 1;
-    console.log(count + " " +staffInfo);
-    count++;
     if(!staffInfo.password || !staffInfo.username){
         res.status(400).send('invalid or incomplete details');
-        console.log(count + " " + staffInfo);
-    count++;
     } else{
         try{
             const check = await staff.findOne({username: staffInfo.username, password: staffInfo.password});
@@ -162,13 +157,13 @@ app.post('/login', async(req, res)=>{
     }
 })
 // Defining schema for order items
-const orderItemsSchema = new mongoose.Schema({
+const mealsItemsSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     image: { data: Buffer, contentType: String }
 });
 
-const orderItems = mongoose.model('orderItems', orderItemsSchema);
+const meals = mongoose.model('orderItems', mealsItemsSchema);
 
 // Defining collections for order items
 app.get('/additem',isAuthenticated, (req, res) => {
@@ -177,15 +172,15 @@ app.get('/additem',isAuthenticated, (req, res) => {
 
 // Adding of food item
 app.post('/upload', isAuthenticated, upload.single('image'), async (req, res) => {
-    const orderItemsInfo = req.body;
+    const mealsInfo = req.body;
     const image = req.file;
 
-    if (!image || !orderItemsInfo.name || !orderItemsInfo.price) {
+    if (!image || !mealsInfo.name || !mealsInfo.price) {
         res.status(400).send('Please submit a valid file and provide product name and price');
     } else {
-        const newOrderItems = new orderItems({
-            name: orderItemsInfo.name,
-            price: orderItemsInfo.price,
+        const newMeals = new meals({
+            name: mealsInfo.name,
+            price: mealsInfo.price,
             image: {
                 data: image.buffer,
                 contentType: image.mimetype
@@ -193,7 +188,7 @@ app.post('/upload', isAuthenticated, upload.single('image'), async (req, res) =>
         });
 
         try {
-            await newOrderItems.save();
+            await newMeals.save();
             res.status(200).send('Product saved successfully');
         } catch (err) {
             res.status(500).send('An error occurred');
@@ -202,21 +197,21 @@ app.post('/upload', isAuthenticated, upload.single('image'), async (req, res) =>
     }
 });
 
-// Rendering home page with products
+// Rendering home page with meals
 app.get('/home', isAuthenticated, async (req, res) => {
     try {
-        const products = await orderItems.find({});
-        const productsWithBase64Images = products.map(orderItem => {
-            if (orderItem.image && orderItem.image.data && orderItem.image.contentType) {
+        const products = await meals.find({});
+        const productsWithBase64Images = products.map(meal => {
+            if (meal.image && meal.image.data && meal.image.contentType) {
                 return {
-                    ...orderItem._doc,
+                    ...meal._doc,
                     image: {
-                        data: orderItem.image.data.toString('base64'),
-                        contentType: orderItem.image.contentType
+                        data: meal.image.data.toString('base64'),
+                        contentType: meal.image.contentType
                     }
                 };
             } else {
-                return orderItem._doc;
+                return meal._doc;
             }
         });
         res.render('home', { products: productsWithBase64Images });
@@ -304,7 +299,6 @@ app.get('/myorders', isAuthenticated, async(req, res)=>{
             if(loginUser){
                 try{
                     const products = await orders.find({username : loginUser.username})
-                    console.log(products);
                     res.render('myorders', {
                         title : "my orders",
                         products : products
@@ -331,10 +325,26 @@ app.get('/ward', isAuthenticated,(req, res)=>{
 });
 
 //
-app.get('/addpatient', isAuthenticated, (req, res)=>{
-    res.render('addpatient', {
-        title : "Register patent"
-    })
+app.get('/addpatient', isAuthenticated,async (req, res)=>{
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try{
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser){
+                res.render('registerPatient', {
+                    title : "Register patent",
+                    ward : loginUser.dept
+                })
+            } else{
+                res.send('user not found');
+            }
+        } catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    } else{
+        res.send("user not logged in");
+    }
 })
 
 const patientSchema = mongoose.Schema({
@@ -349,6 +359,10 @@ const patientSchema = mongoose.Schema({
         type : String,
         required : true
     },
+    ward : {
+        type : String,
+        required : true,
+    },
     regestry : {
         type : String,
         required : true,
@@ -357,27 +371,29 @@ const patientSchema = mongoose.Schema({
 
 const patient = mongoose.model('patient',patientSchema);
 
-
+//rout for storing new patients details to database
 app.post('/addpatient', isAuthenticated, async(req, res)=>{
     const patientInfo = req.body;
-    if(!patientInfo.fname || !patientInfo.lname || !patientInfo.patientNo){
+    if(!patientInfo.fname || !patientInfo.lname || !patientInfo.patientNo || !patientInfo.ward){
         res.send('invaid or incomplete details please try again');
+        console.log(patientInfo)
     } else{
         try{
-            const check = await staff.findOne({patientNo : patientInfo.patientNo});
+            const check = await patient.findOne({patientNo : patientInfo.patientNo});
             if(check){
                 res.send('patient already exist');
             } else{
                 const loginUserId = req.session.userId;
                 if(loginUserId){
                     try{
-                        const loginUser = await person.findById(loginUserId);
+                        const loginUser = await staff.findById(loginUserId);
                         if(loginUser){
                            // res.send(loginUser.fname + " "+loginUser.lname);
                            const newPatient = new patient({
                             fname : patientInfo.fname,
                             lname : patientInfo.lname,
                             patientNo : patientInfo.patientNo,
+                            ward : patientInfo.ward,
                             regestry : loginUser.fname + " "+loginUser.lname
                             });
 
@@ -402,6 +418,198 @@ app.post('/addpatient', isAuthenticated, async(req, res)=>{
         } catch(err){
             console.log(err);
             res.status(500).send('Internal server error');
+        }
+    }
+})
+
+//method to remder page for patent clearend
+app.get('/clearpatient', isAuthenticated,(req, res)=>{
+    res.render('clearpatient'),{
+        title : "Clear patient"
+    };
+});
+
+//method to get the patient details
+app.post('/clearpatient',isAuthenticated, async(req, res)=>{
+    const patientNoInfo = req.body.patientNo;
+    if(!patientNoInfo){
+        res.send('invalid details');
+    } else{
+        const loginUserId = req.session.userId;
+        if(loginUserId){
+            try{
+                const loginUser = await staff.findById(loginUserId);
+                if(loginUser){
+                    try{
+                        const check = await patient.findOne({patientNo : patientNoInfo});
+                        if(check){
+                            res.render('rmpatient', {
+                                patientNo : patientNoInfo,
+                                ward : loginUser.dept,
+                                name : check.fname + " " + check.lname,
+                                patientId : check._id
+                            });
+                        } else{
+                            res.send('patient douse not exist');
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send(err);
+                    }
+                } else{
+                    res.send("user not found");
+                }
+            } catch(err){
+                console.log(err);
+                res.status(500).send("Internal server error");
+            }
+        } else{
+            res.send('user not logged in');
+        }
+    }
+});
+
+//defining the schema for cleared patients
+const clearedPatientsSchema = mongoose.Schema({
+    name : {
+        type : String,
+        required : true
+    },
+    ward : {
+        type : String,
+        required : true
+    },
+    patientNo : {
+        type : String,
+        required : true
+    }
+})
+
+//definding models for cleard patietds
+const clearedPatients = mongoose.model('clearedPatients', clearedPatientsSchema);
+
+//rout to cleare patiets and record then in cleaded patient table
+app.post('/cleare', isAuthenticated, async(req, res)=>{
+     const patientInfo = req.body;
+     if(!patient.name || !patientInfo.ward || !patientInfo.patientNo || !patientInfo.patientId){
+        res.send("Error with details");
+     } else {
+        const loginUserId = req.session.userId;
+        if(loginUserId){
+            try{
+                const loginUser = await staff.findById(loginUserId);
+                if(loginUser){
+                    const newPatient = clearedPatients({
+                        name : patientInfo.name,
+                        ward : patientInfo.ward,
+                        patientNo : patientInfo.patientNo
+                    });
+
+                    try {
+                        const remove = await patient.findByIdAndDelete(patientInfo.patientId);
+                        if(!remove){
+                            res.send('patient not found');
+                        } else {
+                            try{
+                                await newPatient.save();
+                                res.send('patient cleared succesfully');
+                            } catch(err){
+                                console.log('err');
+                                res.status(500).send('internal server error');
+                            }
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send('Internal server eror');
+                    }
+                } else{
+                    res.send('user not found');
+                }
+            } catch(err){
+                console.log(err);
+                res.status(500).send('Internal server error');
+            }
+        } else{
+            res.send('user not loged in');
+        }
+     }
+})
+
+app.get('/kitchen', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        const loginUser = await staff.findById(loginUserId);
+        if(loginUser.dept=='kitchen' || loginUser.role == 'admin'){
+            try{
+                const products = await meals.find({});
+                const productsWithBase64Images = products.map(meal=>{
+                    if(meal.image && meal.image.contentType && meal.image.data){
+                        return {
+                            ...meal._doc,
+                            image : {
+                                data : meal.image.data.toString('base64'),
+                                contentType : meal.image.contentType
+                            }
+                        } 
+                    } else{
+                        return meal._doc;
+                    }
+                })
+                res.render('kitchen',{
+                    products : productsWithBase64Images
+                })
+            } catch(err){
+                console.log(err);
+                res.status(500).send("Internal server error");
+            }
+        } else{
+            res.send('user not found');
+        }
+    } else{
+        res.send('User not loged in');
+    }
+});
+app.get('/addmeal', isAuthenticated,(req, res)=>{
+    res.render('add', {
+        title : "Add meal"
+    });
+});
+
+app.get('/deletemeal', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try{
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser){
+                console.log(loginUser)
+                if(loginUser.dept=='kichen' || loginUser.role == 'admin'){
+                    try{
+                         const products = await  meals.find({});
+                         const productsWithBase64Images = products.map(meal=>{
+                            if(meal.image && meal.image.data && meal.image.contentType){
+                                 return {
+                                    ...meal._doc,
+                                    image : meal.image.data.toString('base64'),
+                                    contentType : meal.image.contentType
+                                 }
+                            } else{
+                                return meal._doc;
+                            }
+                         })
+                         res.render('kitchen',{
+                            products : productsWithBase64Images
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send('Internal server error');
+                    }
+                } else{
+                    res.send('you have no permition to acces this page');
+                }
+            }
+        } catch(err){
+            console.log(err);
+            res.status(500).send("Internal servr error");
         }
     }
 })

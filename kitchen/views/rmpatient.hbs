@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+</head>
+<body>
+    {{>header}}
+    <table>
+        <form action="/cleare" method="post">
+            <tr>
+                <th><label for="name">Name(s)</label></th>
+                <td><input type="text" name="name" value="{{name}}" readonly></td>
+            </tr>
+            <tr>
+                <th><label for="patientNo">PatientNo</label></th>
+                <td><input type="text" name="patientNo" value="{{patientNo}}" readonly></td>
+            </tr>
+            <tr>
+                <th><label for="ward">Ward</label></th>
+                <td><input type="text" name="ward" value="{{ward}}" readonly></td>
+            </tr>
+            <tr>
+                <input type="hidden" name="patientId" value="{{patientId}}">
+                <th><button type="submit">cleare</button></th>
+            </tr>
+        </form>
+    </table>
+</body>
+</html>

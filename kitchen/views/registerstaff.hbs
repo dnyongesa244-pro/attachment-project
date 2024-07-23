@@ -7,65 +7,59 @@
 </head>
 <body>
     {{>header}}
-        <form action="/registernew" method="post">
-            <table>
+    <div class="container">
+        {{>kitchennav}}
+        <div class="content">
+              <table>
+               <form action="/registernew" method="post">
                 <tr>
                     <th><label for="fname">First name</label></th>
-                    <td><input type="text" name="fname"></td>
+                    <td><input type="text" name="fname" required></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="sname">Second name</label></th>
                     <td><input type="text" name="sname" placeholder="optional"></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="lname">Last name</label></th>
-                    <td><input type="text" name="lname"></td>
+                    <td><input type="text" name="lname" required></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="username">Username</label></th>
-                    <td><input type="text" name="username"></td>
+                    <td><input type="text" name="username" required></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="dept">Department</label></th>
-                    <td><input type="text" name="dept"></td>
+                    <td><input type="text" name="dept" required></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="email">Email</label></th>
-                    <td><input type="text" name="email"></td>
+                    <td><input type="email" name="email" required></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="phoneNo">Phone No</label></th>
-                    <td><input type="text" name="phoneNo"></td>
+                    <td><input type="text" name="phoneNo" required></td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><label for="password">Passsword</label></th>
-                    <td><input type="password" name="password"></td>
+                    <td><input type="password" name="password" required></td>
                 </tr>
                 <tr>
                     <th><label for="role">Role</label></th>
-                    <td><input type="text" name="role"></td>
+                    <td>
+                        <select name="role" id="role">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </td>
                 </tr>
-                <br>
-                <br>
                 <tr>
                     <th><button type="submit">Save</button></th>
                     <th><button type="reset"><a href="reset">home</a></button></th>
                 </tr>
-            </table>
         </form>
+    </table> 
+        </div>
+    </div>   
 </body>
 </html>

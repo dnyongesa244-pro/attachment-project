@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {{>header}}
+    <form action="/clearpatient" method="post">
+        <table>
+            <tr>
+                <td><label for="patientNo">Enter patientNo</label></td>
+                <td><input type="text" name="patientNo" required></td>
+            </tr>
+            <tr>
+                <th><button type="submit">Search</button></th>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
