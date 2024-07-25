@@ -15,7 +15,7 @@ const cookieParser = require('cookie-parser');
 const { type } = require('os');
 const { title } = require('process');
 const { METHODS } = require('http');
-const { warn, assert } = require('console');
+const { warn, assert, count } = require('console');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
@@ -84,52 +84,66 @@ app.get('/registernew',isAuthenticated, (req, res) => {
 });
 
 // Posting the new user to the database
-app.post('/registernew', isAuthenticated, async (req, res) =>{
+app.post('/registernew', isAuthenticated, async (req, res) => {
     const personInfo = req.body;
-    if (!personInfo.fname || !personInfo.lname || !personInfo.username || !personInfo.dept || !personInfo.password){
-            res.send('Please enter valid details');
-        } else {
-            const loginUserId = req.session.userId;
-            if(loginUserId){ 
-                try {
-                    const loginUser = await staff.findById(loginUserId);
-                    if(loginUser.role== 'admin')  {
-                        const check = await staff.findOne({ username: personInfo.username });
-                        if (check) {
-                            res.send('User already exists');
-                       } else {
-                            const newPerson = new staff({
-                                fname: personInfo.fname,
-                                sname: personInfo.sname,
-                                lname: personInfo.lname,
-                                username: personInfo.username,
-                                dept: personInfo.dept,
-                                email: personInfo.email,
-                                phoneNo: personInfo.phoneNo,
-                                role: personInfo.role,
-                                password: personInfo.password
-                            });
-                            try {
-                                await newPerson.save();
-                                res.send('New person added successfully');
-                            } catch (err){
-                                console.log(err);
-                                res.status(500).send('Internal server error');
-                            }
-                        }
-                    } else{
-                        res.send('you have no permition to register new users: '+loginUser.role);
-                    }   
-                } catch(err){
-                    console.log(err);
-                    res.status(500).send('internal server errror');
-                }  
 
-            } else{
-                res.send('user not logged in');
+    // Check if all required fields are present
+    if (!personInfo.fname || !personInfo.lname || !personInfo.username || !personInfo.dept || !personInfo.password || !personInfo.email) {
+        return res.send('Please enter valid details');
+    }
+
+    const loginUserId = req.session.userId;
+
+    if (!loginUserId) {
+        return res.send('User not logged in');
+    }
+
+    try {
+        const loginUser = await staff.findById(loginUserId);
+
+        // Check if the logged-in user is an admin
+        if (loginUser.role !== 'admin') {
+            return res.send('You do not have permission to register new users: ' + loginUser.role);
+        }
+
+        // Check if username or email already exists
+        const check = await staff.findOne({
+            $or: [
+                { username: personInfo.username },
+                { email: personInfo.email }
+            ]
+        });
+
+        if (check) {
+            if (check.username === personInfo.username) {
+                return res.send('Username already exists, please use a different username');
+            } else if (check.email === personInfo.email) {
+                return res.send('Email already exists, please use a different email');
             }
-        }     
+        }
+
+        // Create and save the new user
+        const newPerson = new staff({
+            fname: personInfo.fname,
+            sname: personInfo.sname,
+            lname: personInfo.lname,
+            username: personInfo.username,
+            dept: personInfo.dept,
+            email: personInfo.email,
+            phoneNo: personInfo.phoneNo,
+            role: personInfo.role,
+            password: personInfo.password
+        });
+
+        await newPerson.save();
+        res.send('New person added successfully');
+        
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Internal server error');
+    }
 });
+
 
 //rout for login page
 app.get('/login', async(req, res)=>{
@@ -563,7 +577,7 @@ app.get('/kitchen', isAuthenticated, async(req, res)=>{
                 res.status(500).send("Internal server error");
             }
         } else{
-            res.send('user not found');
+            res.send('Acces denied');
         }
     } else{
         res.send('User not loged in');
@@ -729,4 +743,112 @@ app.get('/concledorders', isAuthenticated, async(req, res)=>{
     }
 });
 
-//app.post('pendings')
+app.post('/pending', isAuthenticated, async(req, res)=>{
+    const ordersInfo = req.body;
+    const loginUserId  = req.session.userId;
+    if(loginUserId){
+        try {
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                if(ordersInfo.dept && ordersInfo.item){
+                    try{
+                        const products = await order.find({dept : ordersInfo.dept, item : ordersInfo.item})
+                        var count = 0;
+                        products.forEach(element=>{
+                           count++;
+                        });
+                        res.render('pending',{
+                            products : products,
+                            total : count
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } if(ordersInfo.item){
+                    try{
+                        const products = await order.find({item : ordersInfo.item})
+                        var count = 0;
+                        products.forEach(element=>{
+                           count++;
+                        });
+                        res.render('pending',{
+                            products : products,
+                            total : count
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }else if(ordersInfo.dept){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept})
+                        var count = 0;
+                        products.forEach(element=>{
+                           count++;
+                        });
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else{
+                    try{
+                        const products = await order.find({})
+                        var count = 0;
+                        products.forEach(element=>{
+                           count++;
+                        });
+                        res.render('pending',{
+                            products : products,
+                            total : count
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }
+            } else{
+                res.send("You cant acces this page");
+            }
+        }  catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    }
+});
+
+app.get('/pending',isAuthenticated,async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(loginUserId){
+        try{
+            const loginUser = await staff.findById(loginUserId);
+            if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                try{
+                    const products = await orders.find({});
+                    var count = 0;
+                    products.forEach(element=>{
+                        count++;
+                    })
+                    res.render('kitchenPending',{
+                        products : products,
+                        total : count
+                    })
+                } catch(err){
+                    console.log(err);
+                    res.status(500).send("Internal server error");
+                }
+            } else{
+                res.send("you have no permition to acces this page");
+            }
+        } catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    } else{
+        res.send("User not found");
+    }
+})

@@ -1,0 +1,25 @@
+{{!-- <div class="products">
+    {{#each products}}
+    <form action="/pending">
+        <table>
+         <tr>
+            <th><input type="text" name="dept" placeholder="enter department"></th>
+            <th><input type="text" name="item" placeholder="enter foodItem"></th>
+            <td><button type="submit">filter</button></td>
+         </tr>
+        </table>
+    </form>
+     <div class="product">
+        <p>Food : {{this.item}}   price: {{this.price}}</p>
+        <p>name :{{this.name}}</p>
+        <p>department : {{this.dept}}</p>
+     </div>
+     {{/each}}
+</div> --}}
+
+   {{#each products}}
+       <div  class="product">
+          <h3>{{this.name}} {{this.price}}</h3>
+          <h4>{{this.dept}}</h4>
+       </div>
+    {{/each}}   
