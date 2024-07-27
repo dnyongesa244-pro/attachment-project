@@ -1,0 +1,33 @@
+<table class="listtable">
+   <tr>
+      <th>Name</th>
+      <th>dept</th>
+      <th>status</th>
+      <th>Meal</th>
+      <th>price</th>
+   </tr>
+
+         {{#each products}}
+      <!-- <div  class="product">
+         <h2>Name : {{this.name}}</h2>
+          <h3>{{this.item}} {{this.price}}</h3>
+          <h4>{{this.dept}}</h4>
+       </div>-->
+       <tr>
+         <td>{{this.name}}</td>
+         <td>{{this.dept}}</td>
+         <td>{{this.status}}</td>
+         <td>{{this.item}}</td>
+         <td>ksh.{{this.price}}</td>
+       </tr>
+       {{/each}}   
+   </tr>
+   <tr>
+     <!-- {{#each deptsList}}
+      <select name="dept" id="dept">
+         <option value="{{this.deptName}}">{{this.deptName}}</option>
+      </select>
+      <td>{{this.deptName}}</td>
+      {{/each}}  -->
+   </tr>
+</table>

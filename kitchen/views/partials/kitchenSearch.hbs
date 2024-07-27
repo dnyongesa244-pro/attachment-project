@@ -1,9 +1,44 @@
-<form action="/pending" method="post">
-    <table>
-        <tr>
-            <input type="text" name="dept" id="dept" placeholder="Enter department name here">
-            <input type="text" name="item" id="item" placeholder="Enter fooname here">
-            <button type="submit">Filter</button>
-        </tr>
-    </table>
-</form>
+<div>
+    <form action="/pending" method="post">
+               <!-- <input type="text" id="deptSearch" placeholder="search department" onkeyup="filterDepartments()">-->
+                <select name="dept" id="dept">
+                     {{#each deptsList}}
+                        <option value="{{this.deptName}}">{{this.deptName}}</option>
+                      {{/each}}
+                </select>
+                <input type="text" name="item" id="item" placeholder="Enter fooname here">
+                <button type="submit">Filter</button>
+    </form>
+</div>
+
+<!--<div>
+    <form action="/pending" method="post">
+        <input type="text" id="deptSearch" placeholder="Search departments..." onkeyup="filterDepartments()">
+        <select name="dept" id="dept">
+            {{#each deptsList}}
+                <option value="{{this.deptName}}">{{this.deptName}}</option>
+            {{/each}}
+        </select>
+        <input type="text" name="item" id="item" placeholder="Enter food name here">
+        <button type="submit">Filter</button>
+    </form>
+</div>
+-->
+<script>
+function filterDepartments() {
+    var input, filter, select, options, i;
+    input = document.getElementById('deptSearch');
+    filter = input.value.toUpperCase();
+    select = document.getElementById('dept');
+    options = select.getElementsByTagName('option');
+
+    for (i = 0; i < options.length; i++) {
+        var option = options[i];
+        if (option.text.toUpperCase().indexOf(filter) > -1) {
+            option.style.display = "";
+        } else {
+            option.style.display = "none";
+        }
+    }
+}
+</script>

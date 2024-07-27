@@ -9,7 +9,7 @@
     {{>header}}
     <div class="container">
         {{>kitchennav}}
-        <div class="content">
+        <div class="content"> 
               <table>
                <form action="/registernew" method="post">
                 <tr>
@@ -30,7 +30,13 @@
                 </tr>
                 <tr>
                     <th><label for="dept">Department</label></th>
-                    <td><input type="text" name="dept" required></td>
+                    <td>
+                        <select name="dept" id="dept">
+                        {{#each deptt}}
+                        <option value="{{this.deptName}}">{{this.deptName}}</option>
+                        {{/each}}
+                    </select>
+                    </td>
                 </tr>
                 <tr>
                     <th><label for="email">Email</label></th>

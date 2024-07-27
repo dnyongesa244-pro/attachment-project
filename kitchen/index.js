@@ -16,6 +16,7 @@ const { type } = require('os');
 const { title } = require('process');
 const { METHODS } = require('http');
 const { warn, assert, count } = require('console');
+const { statfs } = require('fs');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
@@ -76,11 +77,30 @@ const personSchema = new mongoose.Schema({
 });
 
 // Defining the collection
-const staff = mongoose.model('staff', personSchema);
+const staffs = mongoose.model('staffs', personSchema);
+
+
+const deptSchema = mongoose.Schema({
+    deptName : {
+        type : String,
+        required : true
+    },
+    head : {
+        type :String,
+        required : true
+    }
+})
+
+const depts = mongoose.model('depts',deptSchema);
+
 
 // Getting the add new user page
-app.get('/registernew',isAuthenticated, (req, res) => {
-    res.render('registerstaff');
+app.get('/registernew',isAuthenticated, async(req, res) => {
+    const deptt =  await depts.find({});
+    console.log(deptt);
+    res.render('registerstaff', {
+        deptt : deptt
+    });
 });
 
 // Posting the new user to the database
@@ -99,7 +119,7 @@ app.post('/registernew', isAuthenticated, async (req, res) => {
     }
 
     try {
-        const loginUser = await staff.findById(loginUserId);
+        const loginUser = await staffs.findById(loginUserId);
 
         // Check if the logged-in user is an admin
         if (loginUser.role !== 'admin') {
@@ -107,13 +127,12 @@ app.post('/registernew', isAuthenticated, async (req, res) => {
         }
 
         // Check if username or email already exists
-        const check = await staff.findOne({
+        const check = await staffs.findOne({
             $or: [
                 { username: personInfo.username },
                 { email: personInfo.email }
             ]
         });
-
         if (check) {
             if (check.username === personInfo.username) {
                 return res.send('Username already exists, please use a different username');
@@ -123,7 +142,7 @@ app.post('/registernew', isAuthenticated, async (req, res) => {
         }
 
         // Create and save the new user
-        const newPerson = new staff({
+        const newPerson = new staffs({
             fname: personInfo.fname,
             sname: personInfo.sname,
             lname: personInfo.lname,
@@ -152,13 +171,14 @@ app.get('/login', async(req, res)=>{
     })
 })
 
+//validating login before proceeding to homepage
 app.post('/login', async(req, res)=>{
     const staffInfo = req.body;
     if(!staffInfo.password || !staffInfo.username){
         res.status(400).send('invalid or incomplete details');
     } else{
         try{
-            const check = await staff.findOne({username: staffInfo.username, password: staffInfo.password});
+            const check = await staffs.findOne({username: staffInfo.username, password: staffInfo.password});
             if(check){
                 req.session.userId = check._id;
                 res.redirect('/home');
@@ -177,7 +197,7 @@ const mealsItemsSchema = new mongoose.Schema({
     image: { data: Buffer, contentType: String }
 });
 
-const meals = mongoose.model('orderItems', mealsItemsSchema);
+const meals = mongoose.model('meals', mealsItemsSchema);
 
 // Defining collections for order items
 app.get('/additem',isAuthenticated, (req, res) => {
@@ -260,21 +280,26 @@ const ordersSchema = mongoose.Schema({
     status : {
         type : String,
         required : true
+    },
+    delivery : String,
+    action : {
+        type : String,
+        required : true
     }
 });
 
 const orders = mongoose.model('orders', ordersSchema);
 
+//rrout to record subbmited orders
 app.post('/orders', isAuthenticated, async(req, res)=>{
     const ordersInfo = req.body;
-    console.log(ordersInfo)
     if(!ordersInfo.name || !ordersInfo.price){
         res.send('invalid order');
     } else{
         const loginUserId = req.session.userId;
         if(loginUserId){
             try{
-                const loginUser = await staff.findById(loginUserId);
+                const loginUser = await staffs.findById(loginUserId);
                 if(loginUser){
                     const newOrders = new orders({
                         name : loginUser.fname + " "+loginUser.lname,
@@ -283,8 +308,8 @@ app.post('/orders', isAuthenticated, async(req, res)=>{
                         item : ordersInfo.name,
                         price : ordersInfo.price,
                         status : "pending",
+                        action : 'pending'
                     });
-                    
                     try{
                         await newOrders.save();
                         res.send('order submited successfuly');
@@ -305,11 +330,12 @@ app.post('/orders', isAuthenticated, async(req, res)=>{
     }
 })
 
+//rout to view made orders for the loggged in user
 app.get('/myorders', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
         try {
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser){
                 try{
                     const products = await orders.find({username : loginUser.username, status : 'pending'})
@@ -338,7 +364,7 @@ app.get('/ward', isAuthenticated,(req, res)=>{
     res.render('ward');
 });
 
-//
+//rout for registering new patiends in the word
 app.get('/addpatient', isAuthenticated,async (req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
@@ -361,6 +387,7 @@ app.get('/addpatient', isAuthenticated,async (req, res)=>{
     }
 })
 
+//patiend schema
 const patientSchema = mongoose.Schema({
     fname : {
         type : String,
@@ -549,10 +576,11 @@ app.post('/cleare', isAuthenticated, async(req, res)=>{
      }
 })
 
+//rout for kitchen staff
 app.get('/kitchen', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
-        const loginUser = await staff.findById(loginUserId);
+        const loginUser = await staffs.findById(loginUserId);
         if(loginUser.dept=='kitchen' || loginUser.role == 'admin'){
             try{
                 const products = await meals.find({});
@@ -583,6 +611,8 @@ app.get('/kitchen', isAuthenticated, async(req, res)=>{
         res.send('User not loged in');
     }
 });
+
+//rout for adding a meal
 app.get('/addmeal', isAuthenticated,(req, res)=>{
     res.render('add', {
         title : "Add meal"
@@ -590,30 +620,18 @@ app.get('/addmeal', isAuthenticated,(req, res)=>{
 });
 
 
-app.get('/deletemeal', isAuthenticated, async(req, res)=>{
+//rout for deleting a meal
+app.post('/deletemeal', isAuthenticated, async(req, res)=>{
+    const  mealInfo = req.body;
     const loginUserId = req.session.userId;
     if(loginUserId){
         try{
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser){
-                console.log(loginUser)
                 if(loginUser.dept=='kichen' || loginUser.role == 'admin'){
                     try{
-                         const products = await  meals.find({});
-                         const productsWithBase64Images = products.map(meal=>{
-                            if(meal.image && meal.image.data && meal.image.contentType){
-                                 return {
-                                    ...meal._doc,
-                                    image : meal.image.data.toString('base64'),
-                                    contentType : meal.image.contentType
-                                 }
-                            } else{
-                                return meal._doc;
-                            }
-                         })
-                         res.render('kitchen',{
-                            products : productsWithBase64Images
-                        })
+                         const products = await  meals.findByIdAndDelete(mealInfo.id);
+                         res.redirect('/kitchen')
                     } catch(err){
                         console.log(err);
                         res.status(500).send('Internal server error');
@@ -629,14 +647,15 @@ app.get('/deletemeal', isAuthenticated, async(req, res)=>{
     }
 })
 
+//rout for viewing pending orders
 app.get('/viewpedingordsers', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
         try {
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser){
                 if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
-                    const products = await orders.find({status : "pending"});
+                    const products = await orders.find({status : "pending", action : pending});
                     console.log(products)
                     res.render('pending', {
                         products : products
@@ -656,12 +675,13 @@ app.get('/viewpedingordsers', isAuthenticated, async(req, res)=>{
     }
 });
 
+//rout for viewing patiends
 app.get('/patients', isAuthenticated, async(req, res)=>{
     
     const loginUserId = req.session.userId;
     if(loginUserId){
         try{
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
                 try {
                     const patientDetails = await patient.find({ward : loginUser.dept});
@@ -690,6 +710,7 @@ app.get('/patients', isAuthenticated, async(req, res)=>{
     }
 });
 
+//rout for councling orders
 app.post('/concledorders', isAuthenticated, async(req, res)=>{
     const ordersInfo = req.body.id;
     if(!ordersInfo){
@@ -701,6 +722,7 @@ app.post('/concledorders', isAuthenticated, async(req, res)=>{
                 res.status(404).send("Order not found");
             } else{
                 order.status = "councled";
+                order.action = "councled";
                 try {
                     await order.save();
                     res.send("order councled succesfuly");
@@ -716,11 +738,12 @@ app.post('/concledorders', isAuthenticated, async(req, res)=>{
     }
 })
 
+//councled orders by staff
 app.get('/concledorders', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
         try{
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser){
                 try {
                     const product = await orders.find({username : loginUser.username , status : 'councled'});
@@ -743,36 +766,47 @@ app.get('/concledorders', isAuthenticated, async(req, res)=>{
     }
 });
 
+//view pendin orders by kichen and admin 
 app.post('/pending', isAuthenticated, async(req, res)=>{
     const ordersInfo = req.body;
     const loginUserId  = req.session.userId;
     if(loginUserId){
         try {
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
                 if(ordersInfo.dept && ordersInfo.item){
                     try{
-                        const products = await order.find({dept : ordersInfo.dept, item : ordersInfo.item})
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item})
                         var count = 0;
                         products.forEach(element=>{
                            count++;
                         });
-                        res.render('pending',{
-                            products : products,
-                            total : count
-                        })
+                        try{
+                            const deptsList = await depts.find({});
+                            deptsList.forEach(element=>{
+                                console.log(element)
+                            })
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
                     } catch(err){
                         console.log(err);
                         res.status(500).send("An error occured")
                     }
                 } if(ordersInfo.item){
                     try{
-                        const products = await order.find({item : ordersInfo.item})
+                        const products = await orders.find({item : ordersInfo.item})
                         var count = 0;
                         products.forEach(element=>{
                            count++;
                         });
-                        res.render('pending',{
+                        res.render('kitchenPending',{
                             products : products,
                             total : count
                         })
@@ -797,12 +831,12 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                     }
                 } else{
                     try{
-                        const products = await order.find({})
+                        const products = await orders.find({})
                         var count = 0;
                         products.forEach(element=>{
                            count++;
                         });
-                        res.render('pending',{
+                        res.render('kitchenPending',{
                             products : products,
                             total : count
                         })
@@ -820,23 +854,31 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
         }
     }
 });
-
+//view filtered pending
 app.get('/pending',isAuthenticated,async(req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
         try{
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
                 try{
-                    const products = await orders.find({});
+                    const products = await orders.find({status : 'pending'});
                     var count = 0;
                     products.forEach(element=>{
                         count++;
                     })
-                    res.render('kitchenPending',{
-                        products : products,
-                        total : count
-                    })
+                    try{
+                        const deptsList = await depts.find({});
+                        console.log(deptsList);
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("internal sever error");
+                    }
                 } catch(err){
                     console.log(err);
                     res.status(500).send("Internal server error");
@@ -850,5 +892,226 @@ app.get('/pending',isAuthenticated,async(req, res)=>{
         }
     } else{
         res.send("User not found");
+    }
+})
+
+//rout for adding departmet
+app.get('/addDept', isAuthenticated, (req, res)=>{
+    res.render('addDept');
+})
+//rout for storing added department to database
+app.post("/addDept", isAuthenticated, async(req, res)=>{
+    const {dept, head} = req.body;
+    const loginUserId = req.session.userId;
+    if(!dept || !head){
+        return res.status(500).send("Invalid details");
+    }
+    if(!loginUserId){
+        return res.status(401).send("User not loged in");
+    }   
+       try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.status(404).send('user not found');
+        }
+        if(loginUser.role !== 'admin'){
+            res.status(403).send("Action denied");
+        }
+
+        const deptUpper = dept.toUpperCase();
+        const check = await depts.findOne({deptName: deptUpper});
+        if(!check){
+            const newDepts = new depts({
+                deptName : deptUpper,
+                head : head
+            })
+
+            try{
+                await newDepts.save();
+                res.send("Success");
+            } catch(Err){
+                console.log(Err);
+                res.send("internal server error");
+            }
+        } else{
+             return res.send("Department already exist");
+        }
+       } catch(err){
+        console.log(err);
+        res.send("error");
+       }
+})
+
+
+
+//rout too  mark order as deliverd by kitchen staff
+app.post('/ktchnnmarkdeliverd', isAuthenticated, async(req, res) => {
+    const loginUserId = req.session.userId;
+    if(loginUserId) {
+        try {
+            const loginUser = await staffs.findById(loginUserId);
+            if(loginUser.dept === 'kitchen' || loginUser.role === 'admin') {
+                const { orderId } = req.body; // Assuming req.body contains orderId
+                try {
+                    const order = await orders.findById(orderId);
+                    if(order) {
+                        order.action = "delivered"; // Ensure the field name matches your schema
+                        order.status = 'delivered';
+                        order.delivery = loginUser.fname + " " + loginUser.lname;
+                        
+                        try {
+                            await order.save(); // Save the updated order
+                            res.send("Order delivery successful");
+                        } catch(err) {
+                            console.log(err);
+                            res.status(500).send("Internal server error");
+                        }
+                    } else {
+                        res.send("Order not found");
+                    }
+                } catch(err) {
+                    console.log(err);
+                    res.status(500).send("Internal server error");
+                }
+            } else {
+                res.send("You're not allowed to perform this action");
+            }
+        } catch(err) {
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    } else {
+        res.send("User not logged in");
+    }
+});
+
+//list to view deliverd order by logged in user
+app.get('/delivered',isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.status(404).send("User not found");
+    } else{
+        try {
+            const loginUser = await staffs.findById(loginUserId);
+            if(!loginUser){
+                res.send("User not found");
+            } else{}
+                const product = await orders.find({username : loginUser.username, status : 'delivered' , action : "delivered"});
+                res.render('delivered', {
+                    products : product
+                });
+            } catch(err){
+                res.send(err);
+                console.log("Internal server error");
+            }
+        }
+    })
+
+//rout to cofirm delivery of order by logged in user
+app.post('/confirmdelivery', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    const ordersInfo = req.body.id;
+    if(!ordersInfo){
+        return res.send("Invalid request")
+    }
+
+    if(!loginUserId){
+        return res.send("User not loged in");
+    }
+
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("user not found");
+        } else{
+            const product = await orders.findById(ordersInfo);
+            if(!product){
+                return res.send("Invalid reques");
+            } else{
+                product.action = 'confirmed';
+                product.status = "complete"
+                const check = await product.save();
+                 res.send("success");
+                 console.log(product);
+            }
+        }
+    } catch(err){
+        console.log(err);
+        res.send("internal server error");
+    }
+})
+
+//rout for getting the completed order for the logged in user
+app.get('/completeprders', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not logged in");
+    }
+
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("User not found");
+        } else{
+            console.log(loginUser);
+            const products = await orders.find({username : loginUser.username, status : 'complete', action : 'confirmed'});
+            res.render('completeprders',{
+                products : products
+            })
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error");
+    }
+})
+
+//rout to get the completed orders for all system users by kitchen staff
+app.get('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
+    const ordersInfo = req.body;
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not loged in");
+    }
+     try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(loginUser){
+            if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+                const products = await orders.find({status : 'complete', action : 'confirmed'});
+                res.render('kitchencompletedOrders', {
+                    products : products
+                })
+            } else {
+                res.send("acces dennied");
+            }
+        } else{
+            res.send("user not found");
+        }
+     }catch(err){
+        console.log(err);
+        res.send("Internal server error");
+     }
+    
+})
+
+app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("Not loged in");
+    }
+
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("User not found");
+        } else if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+            const products = await orders.find({status : "delivered", action : 'delivered'});
+            console.log(products);
+            res.render('Kitchendelivered',{
+                products : products
+            })
+        }
+    } catch(err){
+        console.log(err);
+        res.send("internal server error");
     }
 })

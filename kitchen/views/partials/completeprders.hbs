@@ -1,0 +1,13 @@
+<div class="products">
+    {{#each products}}
+     <div class="product">
+        <h3>Name : {{this.item}}</h3>
+        <p>price : Ksh.{{this.price}}</p>
+        <p>status : completed order</p>
+        <!--<form action="/Confirmdelivery" method="post">
+             <input type="hidden" name="id" id="id" value="{{this.id}}">
+             <button type="submit">Confirm delivery</button>
+        </form>-->
+     </div>
+     {{/each}}
+</div>

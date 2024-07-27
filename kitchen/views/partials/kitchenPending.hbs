@@ -1,25 +1,48 @@
-{{!-- <div class="products">
-    {{#each products}}
-    <form action="/pending">
-        <table>
-         <tr>
-            <th><input type="text" name="dept" placeholder="enter department"></th>
-            <th><input type="text" name="item" placeholder="enter foodItem"></th>
-            <td><button type="submit">filter</button></td>
-         </tr>
-        </table>
-    </form>
-     <div class="product">
-        <p>Food : {{this.item}}   price: {{this.price}}</p>
-        <p>name :{{this.name}}</p>
-        <p>department : {{this.dept}}</p>
-     </div>
-     {{/each}}
-</div> --}}
+<table class="listtable">
+   <tr>
+      <th>Name</th>
+      <th>dept</th>
+      <th>price</th>
+      <th>Status</th>
+      <th>Action</th>
+   </tr>
 
-   {{#each products}}
-       <div  class="product">
-          <h3>{{this.name}} {{this.price}}</h3>
+         {{#each products}}
+      <!-- <div  class="product">
+         <h2>Name : {{this.name}}</h2>
+          <h3>{{this.item}} {{this.price}}</h3>
           <h4>{{this.dept}}</h4>
-       </div>
-    {{/each}}   
+       </div>-->
+       <tr>
+         <td>{{this.name}}</td>
+         <td>{{this.dept}}</td>
+         <td>{{this.item}}</td>
+         <td>{{this.price}}</td>
+         <td class="button-group">
+            <form action="/ktchnnmarkdeliverd" method="post">
+               <!--<input type="hidden" name="name" id="name" value="{{this.name}}">
+               <input type="hidden" name="dept" id="dept" value="{{this.dept}}">
+               <input type="hidden" name="price" id="price" value="{{this.price}}">-->
+               <input type="hidden" name="orderId" id="orderId" value="{{this.id}}">
+               <button type="submit">Mark as deliverd</button>
+            </form>
+            <form action="" method="post">
+             <!--  <input type="hidden" name="name" id="name" value="{{this.name}}">
+               <input type="hidden" name="dept" id="dept" value="{{this.dept}}">
+               <input type="hidden" name="price" id="price" value="{{this.price}}">
+               <input type="hidden" name="orderId" id="orderId" value="{{this.id}}">-->
+               <button type="submit">reject</button>
+            </form>
+         </td>
+       </tr>
+       {{/each}}   
+   </tr>
+   <tr>
+     <!-- {{#each deptsList}}
+      <select name="dept" id="dept">
+         <option value="{{this.deptName}}">{{this.deptName}}</option>
+      </select>
+      <td>{{this.deptName}}</td>
+      {{/each}}  -->
+   </tr>
+</table>
