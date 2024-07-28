@@ -17,6 +17,7 @@ const { title } = require('process');
 const { METHODS } = require('http');
 const { warn, assert, count } = require('console');
 const { statfs } = require('fs');
+const { escape } = require('querystring');
 
 app.engine('hbs', exphbs.engine({
     extname: ".hbs",
@@ -79,7 +80,18 @@ const personSchema = new mongoose.Schema({
 // Defining the collection
 const staffs = mongoose.model('staffs', personSchema);
 
+const wardSchema = mongoose.Schema({
+    name : {
+        type : String,
+        required : true
+    },
+    head : {
+        type : String,
+        required : true
+    }
+})
 
+const wards = mongoose.model('wards', wardSchema);
 const deptSchema = mongoose.Schema({
     deptName : {
         type : String,
@@ -181,7 +193,7 @@ app.post('/login', async(req, res)=>{
             const check = await staffs.findOne({username: staffInfo.username, password: staffInfo.password});
             if(check){
                 req.session.userId = check._id;
-                res.redirect('/home');
+                res.redirect('/');
             } else{
                 res.send("invalid Username or password");            }
         } catch(err){
@@ -232,7 +244,7 @@ app.post('/upload', isAuthenticated, upload.single('image'), async (req, res) =>
 });
 
 // Rendering home page with meals
-app.get('/home', isAuthenticated, async (req, res) => {
+app.get('/', isAuthenticated, async (req, res) => {
     try {
         const products = await meals.find({});
         const productsWithBase64Images = products.map(meal => {
@@ -369,12 +381,15 @@ app.get('/addpatient', isAuthenticated,async (req, res)=>{
     const loginUserId = req.session.userId;
     if(loginUserId){
         try{
-            const loginUser = await staff.findById(loginUserId);
+            const loginUser = await staffs.findById(loginUserId);
             if(loginUser){
-                res.render('registerPatient', {
-                    title : "Register patent",
-                    ward : loginUser.dept
-                })
+                const check = await wards.find({name : loginUser.dept});
+                if(check || loginUser.role === 'admin'){
+                    res.render('registerPatient', {
+                        title : "Register patent",
+                        ward : loginUser.dept
+                    })
+                }                
             } else{
                 res.send('user not found');
             }
@@ -427,24 +442,29 @@ app.post('/addpatient', isAuthenticated, async(req, res)=>{
                 const loginUserId = req.session.userId;
                 if(loginUserId){
                     try{
-                        const loginUser = await staff.findById(loginUserId);
+                        const loginUser = await staffs.findById(loginUserId);
                         if(loginUser){
                            // res.send(loginUser.fname + " "+loginUser.lname);
-                           const newPatient = new patient({
-                            fname : patientInfo.fname,
-                            lname : patientInfo.lname,
-                            patientNo : patientInfo.patientNo,
-                            ward : patientInfo.ward,
-                            regestry : loginUser.fname + " "+loginUser.lname
-                            });
-
-                           try{
-                            await newPatient.save();
-                                 res.send('patient registered succesfuly');
-                            } catch(err){
-                                 console.log(err);
-                                 res.status(500).send('am error ocured');
-                            }
+                           const check = await wards.findOne({name : loginUser.dept})
+                           if(check){
+                                const newPatient = new patient({
+                                    fname : patientInfo.fname,
+                                    lname : patientInfo.lname,
+                                    patientNo : patientInfo.patientNo,
+                                    ward : patientInfo.ward,
+                                    regestry : loginUser.fname + " "+loginUser.lname
+                                });
+    
+                               try{
+                                await newPatient.save();
+                                     res.send('patient registered succesfuly');
+                                } catch(err){
+                                     console.log(err);
+                                     res.status(500).send('am error ocured');
+                                }
+                           } else{
+                            return res.send("Action denied");
+                           }
                         } else{
                             res.send("User not found");
                         }
@@ -479,10 +499,10 @@ app.post('/clearpatient',isAuthenticated, async(req, res)=>{
         const loginUserId = req.session.userId;
         if(loginUserId){
             try{
-                const loginUser = await staff.findById(loginUserId);
+                const loginUser = await staffs.findById(loginUserId);
                 if(loginUser){
                     try{
-                        const check = await patient.findOne({patientNo : patientNoInfo});
+                        const check = await patient.findOne({patientNo : patientNoInfo, ward : loginUser.dept});
                         if(check){
                             res.render('rmpatient', {
                                 patientNo : patientNoInfo,
@@ -538,30 +558,35 @@ app.post('/cleare', isAuthenticated, async(req, res)=>{
         const loginUserId = req.session.userId;
         if(loginUserId){
             try{
-                const loginUser = await staff.findById(loginUserId);
+                const loginUser = await staffs.findById(loginUserId);
                 if(loginUser){
-                    const newPatient = clearedPatients({
-                        name : patientInfo.name,
-                        ward : patientInfo.ward,
-                        patientNo : patientInfo.patientNo
-                    });
-
-                    try {
-                        const remove = await patient.findByIdAndDelete(patientInfo.patientId);
-                        if(!remove){
-                            res.send('patient not found');
-                        } else {
-                            try{
-                                await newPatient.save();
-                                res.send('patient cleared succesfully');
-                            } catch(err){
-                                console.log('err');
-                                res.status(500).send('internal server error');
+                    const check = await staffs.find({name : loginUser.dept});
+                    if(!check){
+                        return res.send("Action denied");
+                    } else{
+                        const newPatient = clearedPatients({
+                            name : patientInfo.name,
+                            ward : patientInfo.ward,
+                            patientNo : patientInfo.patientNo
+                        });
+    
+                        try {
+                            const remove = await patient.findByIdAndDelete(patientInfo.patientId);
+                            if(!remove){
+                                res.send('patient not found');
+                            } else {
+                                try{
+                                    await newPatient.save();
+                                    res.send('patient cleared succesfully');
+                                } catch(err){
+                                    console.log('err');
+                                    res.status(500).send('internal server error');
+                                }
                             }
+                        } catch(err){
+                            console.log(err);
+                            res.status(500).send('Internal server eror');
                         }
-                    } catch(err){
-                        console.log(err);
-                        res.status(500).send('Internal server eror');
                     }
                 } else{
                     res.send('user not found');
@@ -682,7 +707,8 @@ app.get('/patients', isAuthenticated, async(req, res)=>{
     if(loginUserId){
         try{
             const loginUser = await staffs.findById(loginUserId);
-            if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+            const check = await wards.find({name : loginUser.dept})
+            if(check){
                 try {
                     const patientDetails = await patient.find({ward : loginUser.dept});
                     var count = 0;
@@ -699,7 +725,7 @@ app.get('/patients', isAuthenticated, async(req, res)=>{
                     res.status(500).send('Internal server error');
                 }
             } else{
-                res.send('User not found');
+                res.send('Access denied');
             }
         }catch(err){
             console.log(err);
@@ -1093,6 +1119,7 @@ app.get('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
     
 })
 
+//rout to view all deliverd order by kitchen department
 app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(!loginUserId){
@@ -1113,5 +1140,173 @@ app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
     } catch(err){
         console.log(err);
         res.send("internal server error");
+    }
+})
+
+//rout to view all ouncled orders by kitche department
+app.get('/kitchenconcledorders',isAuthenticated, async(req, res)=>{
+    const loginUserId  = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not logged in");
+    }
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(loginUser){
+            if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+                const products =await   orders.find({status : 'councled'});
+                console.log(products);
+                res.render('kitchenconcledorders', {
+                    products : products
+                })
+            } else{
+                return res.send("Acces denied");
+            }
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error");
+    }
+})
+
+//rout to add ward
+app.get('/addward', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not logged in");
+    }
+     try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(loginUser){
+            if(loginUser.role === 'admin'){
+                res.render('addward');
+            }
+        }
+     } catch(err){
+        console.log(err);
+        res.send("interal server error")
+     }
+})
+
+
+app.post('/addward', isAuthenticated, async(req, res)=>{
+    const wardInfo = req.body;
+    const loginUserId = req.session.userId;
+    if(!wardInfo.wardname || !wardInfo.head){
+        return res.send("Invalid details");
+    }
+    if(!loginUserId){
+        return res.send("user not loged in");
+    }
+
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(loginUser){
+            if(loginUser.role === 'admin'){
+                const check = await ward.findOne({name : wardInfo.wardname.toUpperCase()});
+                if(!check){
+                    const newWard = new ward({
+                        name : wardInfo.wardname.toUpperCase(),
+                        head : wardInfo.head
+                    })
+                    await newWard.save();
+                    res.send("Ward added succesfully");
+                } else{
+                    return res.send(`${wardInfo.wardname} already exists`);
+                }
+            } else{
+                return res.send("Access denied");
+            }
+        } else{
+            return res.send("User not found");
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error")
+    }
+})
+app.get("/makewardorders", isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not loged in")
+    }
+    try {
+        const loginUser = await staffs.findById(loginUserId);
+        if(loginUser){
+            const check = await wards.find({dept : loginUser.dept});
+            if(check){
+                const products = await meals.find({});
+                const productsWithBase64Images = products.map(meal=>{
+                    if(meal.image && meal.image.contentType && meal.image.data){
+                        return {
+                            ...meal._doc,
+                            image : {
+                                data : meal.image.data.toString('base64'),
+                                contentType : meal.image.contentType
+                            }
+                        }
+                    } else{
+                        return meal._doc;
+                    }
+                })
+                var count  = 0;
+                const patients = await patient.find({});
+                patients.forEach(element=>{
+                    count++;
+                })
+                console.log(count);
+                res.render('makewardorders',{
+                    products : productsWithBase64Images,
+                    total : count
+                });
+            } else {
+                return res.send("Acces denied");
+            }
+        } else{
+            return res.send("User not found");
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error")
+    }
+})
+
+const wardOrdersSchema = mongoose.Schema(
+    {
+        meal : {
+            type : String,
+            required : true
+        },
+        ward : {
+            type : String,
+            required : true
+        }
+    }
+)
+
+app.post('/wardorder',isAuthenticated,async(req, res)=>{
+    const ordersInfo = req.body;
+    const loginUserId  = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not loged in")
+    }
+    if(!ordersInfo.name || !ordersInfo.price){
+        return res.send("Invalid details")
+    }
+
+    try {
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("User not logged in");
+        } else{
+            const check = await wards.findOne({name : loginUser.dept});
+            if(!check){
+                return res.send("You have no permition to order")
+            } else{
+                return res.send("Permition grandes");
+            }
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internalserver error");
     }
 })

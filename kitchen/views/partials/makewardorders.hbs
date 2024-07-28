@@ -1,0 +1,17 @@
+<div id="products">
+        {{#each products}}
+        <div class="product">
+            {{#if this.image}}
+            <img src="data:{{this.image.contentType}};base64,{{this.image.data}}" alt="{{this.name}}" />
+            {{/if}}
+            <h2><span style="margin-right: 10px; color :rgb(123, 255, 0)">{{this.name}}</span>  <span>Ksh{{this.price}}</span></h2>
+            <form action="/wardorder" method="post">
+                <input type="hidden" name="name" value="{{this.name}}">
+                <input type="hidden" name="price" value="{{this.price}}">
+                <button type="submit">Order</button>
+            </form>
+        </div>
+        {{/each}}
+    </div>
+
+
