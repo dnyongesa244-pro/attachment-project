@@ -1326,9 +1326,6 @@ app.post('/wardorder',isAuthenticated,async(req, res)=>{
                         tatalPatients : ordersInfo.total,
                         price : ordersInfo.price*ordersInfo.total
                     });
-                    // res.send("Permition grandes");
-                    // console.log(ordersInfo);
-                    // console.log(ordersInfo.total*ordersInfo.price)
 
                     try{
                         await newWardOrder.save();
