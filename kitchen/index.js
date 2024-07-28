@@ -1256,7 +1256,7 @@ app.get("/makewardorders", isAuthenticated, async(req, res)=>{
                 console.log(count);
                 res.render('makewardorders',{
                     products : productsWithBase64Images,
-                    total : count
+                    total : count.toString()
                 });
             } else {
                 return res.send("Acces denied");
@@ -1279,10 +1279,19 @@ const wardOrdersSchema = mongoose.Schema(
         ward : {
             type : String,
             required : true
+        },
+        tatalPatients : {
+            type : Number,
+            required : true
+        },
+        price : {
+            type : Number,
+            required : true
         }
     }
 )
 
+const wardOrders = mongoose.model('wardOrders', wardOrdersSchema);
 app.post('/wardorder',isAuthenticated,async(req, res)=>{
     const ordersInfo = req.body;
     const loginUserId  = req.session.userId;
@@ -1290,6 +1299,7 @@ app.post('/wardorder',isAuthenticated,async(req, res)=>{
         return res.send("User not loged in")
     }
     if(!ordersInfo.name || !ordersInfo.price){
+        console.log(ordersInfo)
         return res.send("Invalid details")
     }
 
@@ -1302,7 +1312,32 @@ app.post('/wardorder',isAuthenticated,async(req, res)=>{
             if(!check){
                 return res.send("You have no permition to order")
             } else{
-                return res.send("Permition grandes");
+                var count  = 0;
+                const patients = await patient.find({});
+                patients.forEach(element=>{
+                    count++;
+                })
+                if(count<ordersInfo.total){
+                    res.send("Number of patients cannot exceed those in the ward")
+                } else{
+                    const newWardOrder = new wardOrders({
+                        meal : ordersInfo.name,
+                        ward : loginUser.dept,
+                        tatalPatients : ordersInfo.total,
+                        price : ordersInfo.price*ordersInfo.total
+                    });
+                    // res.send("Permition grandes");
+                    // console.log(ordersInfo);
+                    // console.log(ordersInfo.total*ordersInfo.price)
+
+                    try{
+                        await newWardOrder.save();
+                        res.send("order submited succesfully");
+                    } catch(err){
+                        console.log(err);
+                        res.send("Internal server error");
+                    }
+                }
             }
         }
     } catch(err){

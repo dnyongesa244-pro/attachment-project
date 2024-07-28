@@ -1,4 +1,5 @@
 <div id="products">
+        <h3>Total patients in the word: {{total}}</h3>
         {{#each products}}
         <div class="product">
             {{#if this.image}}
@@ -8,6 +9,7 @@
             <form action="/wardorder" method="post">
                 <input type="hidden" name="name" value="{{this.name}}">
                 <input type="hidden" name="price" value="{{this.price}}">
+                <input type="Number" name="total" placeholder="Enter the number of patients" required>
                 <button type="submit">Order</button>
             </form>
         </div>
