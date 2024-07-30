@@ -1,0 +1,61 @@
+<!--<table class="listtable">
+   <tr>
+      <th>Fast name</th>
+      <th>Second name</th>
+      <th>Last name</th>
+      <th>Username</th>
+      <th>role</th>
+      <th>Dept</th>
+      <th>Email</th>
+      <th>PhoneNo</th>
+      
+
+   </tr>
+
+         {{#each personInfo}}
+       <tr>
+         <td>{{this.fname}}</td>
+         <td>{{this.sname}}</td>
+         <td>{{this.lname}}</td>
+         <td>{{tthis.username}}</td>
+         <td>{{this.dept}}</td>
+         <td>{{this.email}}</td>
+         <td>{{this.phoneNo}}</td>
+         <td>{{this.role}}</td>
+       </tr>
+       {{/each}}   
+   </tr>
+   <tr>
+   </tr>
+</table>
+-->
+{{#each personInfo}}
+<main class="form">
+    <div>
+        <form action="">
+            <label for="fname">First Name</label>
+            <input type="text" id="fname" name="firstname" value="{{this.fname}}" readonly>
+
+            <label for="sname">Second name</label>
+            <input type="text" id="fname" name="firstname" value="{{this.sname}}" readonly>
+
+            <label for="lname">Last name</label>
+            <input type="text" name="lname" value="{{this.lname}}" readonly>
+
+            <label for="username">Username</label>
+            <input type="text"  name="username" value="{{this.username}}" readonly>
+
+            <label for="dept">Department</label>
+            <input type="text" name="dept" value="{{this.dept}}" readonly>
+
+            <label for="email">Email</label>
+            <input type="text" name="email" value="{{this.email}}" readonly>
+
+           <label for="email">Phone No</label>
+            <input type="text" name="email" value="{{this.phoneNo}}" readonly> 
+
+          <input type="submit" value="Submit">
+        </form>
+    </div>
+</main>
+{{/each}}
