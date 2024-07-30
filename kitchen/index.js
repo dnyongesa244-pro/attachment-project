@@ -1187,7 +1187,7 @@ app.get('/addward', isAuthenticated, async(req, res)=>{
      }
 })
 
-
+//rout to record new ward  added in the database
 app.post('/addward', isAuthenticated, async(req, res)=>{
     const wardInfo = req.body;
     const loginUserId = req.session.userId;
@@ -1224,6 +1224,7 @@ app.post('/addward', isAuthenticated, async(req, res)=>{
         res.send("Internal server error")
     }
 })
+//rout to make orders in the wards
 app.get("/makewardorders", isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(!loginUserId){
@@ -1270,8 +1271,13 @@ app.get("/makewardorders", isAuthenticated, async(req, res)=>{
     }
 })
 
+//ward schema
 const wardOrdersSchema = mongoose.Schema(
     {
+        requester : {
+            type : String,
+            required : true
+        },
         meal : {
             type : String,
             required : true
@@ -1287,11 +1293,21 @@ const wardOrdersSchema = mongoose.Schema(
         price : {
             type : Number,
             required : true
+        },
+        status : {
+            type : String,
+            required : true
+        },
+        action : {
+            type : String,
+            required : true
         }
     }
 )
 
 const wardOrders = mongoose.model('wardOrders', wardOrdersSchema);
+
+//rout to recorde orders made in the ward
 app.post('/wardorder',isAuthenticated,async(req, res)=>{
     const ordersInfo = req.body;
     const loginUserId  = req.session.userId;
@@ -1321,10 +1337,13 @@ app.post('/wardorder',isAuthenticated,async(req, res)=>{
                     res.send("Number of patients cannot exceed those in the ward")
                 } else{
                     const newWardOrder = new wardOrders({
+                        requester : loginUser.fname + " " + loginUser.lname,
                         meal : ordersInfo.name,
                         ward : loginUser.dept,
                         tatalPatients : ordersInfo.total,
-                        price : ordersInfo.price*ordersInfo.total
+                        price : ordersInfo.price*ordersInfo.total,
+                        status : 'pending',
+                        action : 'pending'
                     });
 
                     try{
@@ -1340,5 +1359,198 @@ app.post('/wardorder',isAuthenticated,async(req, res)=>{
     } catch(err){
         console.log(err);
         res.send("Internalserver error");
+    }
+})
+
+app.get('/wardpending' ,isAuthenticated, async(req, res)=>{
+    const filterInfo = req.body;
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not logged in");
+    } 
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("user not found");
+        } else{
+            const check = await wards.findOne({name : loginUser.dept});
+            if(loginUser.role === 'admin' || loginUser.dept === 'kitchen'){
+                const products = await wardOrders.find({action : 'pending',status : 'pending'});
+                console.log(products);
+                res.render('wardpendingorder',{
+                    products : products
+                });
+            }else if(check){
+                const products = await wardOrders.find({ward : loginUser.dept, status : 'pending'});
+                res.render('wardpending',{
+                    products : products
+                });
+            } else{
+                res.send("Denied");
+            }
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error");
+    }
+});
+
+app.post('/deliverWardOrder', isAuthenticated,async(req, res)=>{
+    const ordersInfo = req.body;
+   // console.log(ordersInfo.id)
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("user not loged in");
+    }
+    if(!ordersInfo.id){
+        return res.send("Invalid details");
+    }
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(loginUser){
+            if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+                 const products = await wardOrders.findById(ordersInfo.id);
+                 products.status = 'delivered';
+                 products.action = 'delivered';
+                 const check = await products.save();
+                 if(check){
+                    res.send("Delivered succesfully");
+                 } else{
+                    res.send("Failed");
+                 }
+            } else{
+                return res.send("Action denied");
+            }
+        } else{
+            return res.send("User not found");
+        }
+    } catch(err){
+        console.log(err);
+        res.send("internal server error");
+    }
+})
+
+app.get('/wardDelivered', isAuthenticated, async (req, res) => {
+    const loginUserId = req.session.userId;
+    if (!loginUserId) {
+        return res.status(401).send('User not logged in');
+    }
+    try {
+        const loginUser = await staffs.findById(loginUserId);
+        if (!loginUser) {
+            return res.status(404).send("User not found");
+        }
+
+        const check = await wards.findOne({ name: loginUser.dept });
+        if (loginUser.dept === 'kitchen' || loginUser.role === 'admin') {
+            const products = await wardOrders.find({ status: 'delivered' });
+            if (products.length > 0) {
+                return res.render('kitwardDelivered', {
+                    products: products
+                });
+            } else {
+                return res.render('kitwardDelivered', {
+                    message: "No products found"
+                });
+            }
+        } else if (check) {
+            const products = await wardOrders.find({ status: 'delivered', ward: loginUser.dept });
+            if (products.length > 0) {
+                return res.render('wardDelivered', {
+                    products: products
+                });
+            } else {
+                return res.render('wardDelivered', {
+                    message: "No products found"
+                });
+            }
+        } else {
+            return res.status(403).send("You do not have permission to view this page");
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Internal server error");
+    }
+});
+
+
+app.post('/confirmwardDelivery', isAuthenticated, async(req, res)=>{
+    const ordersInfo = req.body;
+    const loginUserId = req.session.userId;
+    if(!ordersInfo.id){
+        return res.send('In valid details')
+    }
+    if(!loginUserId){
+        return res.send("User not loged in");
+    } 
+      try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("User not found")
+        } else{
+            const check = await wards.findOne({name : loginUser.dept});
+
+            if(!check){
+                return res.send("Permition denied");
+            } else{
+                const products = await wardOrders.findById(ordersInfo.id);
+                if(products){
+                    products.status = 'complete';
+                    products.action = 'confirmed';
+                    const confirm = await products.save();
+                    if(confirm){
+                        return res.send("Succes");
+                    } else{
+                        return res.send("Failed");
+                    }
+                } else{
+                    return res.send("product not found");
+                }
+            }
+        }
+      } catch(err){
+        console.log(err);
+        res.send("internal server error");
+      }    
+})
+
+
+app.get('/wardCompletedOrders', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("User not loged in");
+    } 
+
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        const check = await wards.findOne({name : loginUser.dept});
+        if(!loginUser){
+            return res.send("User not found");
+        } else{
+            if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+                const products = await wardOrders.find({status : 'complete', action : 'confirmed'});
+                if(products.length>0){
+                    return res.render('wardCompletedOrders',{
+                    products : products
+                    })
+                 } else{
+                    res.send('wardCompletedOrders');
+                 }
+            } else if(check){
+                 const products = await wardOrders.find({ward : loginUser.dept, status : 'complete', action : 'confirmed'});
+                 if(products.length>0){
+                    res.render('wardCompletedOrders',{
+                    products : products
+                    })
+                 } else{
+                    res.render('wardCompletedOrders',{
+                        message : "No products found"
+                        })
+                 }
+            }
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error")
     }
 })

@@ -1,0 +1,30 @@
+<table class="listtable">
+   <tr>
+      <th>Made by</th>
+      <th>Ward</th>
+      <th>Status</th>
+      <th>Meal</th>
+      <th>Price</th>
+      <th>Action</th>
+   </tr>
+
+   {{#each products}}
+   <tr>
+      <td>{{this.requester}}</td>
+      <td>{{this.ward}}</td>
+      <td>{{this.status}}</td>
+      <td>{{this.meal}}</td>
+      <td>ksh.{{this.price}}</td>
+      <td class="button-group">
+         <form action="/deliverWardOrder" method="post">
+             <input type="hidden" name="id" value="{{this._id}}">
+             <button type="submit">Confirm Delivered</button>
+         </form>
+         <form action="/rejectOrder" method="post">
+             <input type="hidden" name="id" value="{{this._id}}">
+             <button type="submit">Reject Order</button>
+         </form>
+      </td>
+   </tr>
+   {{/each}}
+</table>
