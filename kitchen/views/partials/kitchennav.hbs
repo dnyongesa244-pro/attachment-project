@@ -3,8 +3,15 @@
             <a href="/kitchen">Meals</a>
             <a href="/registernew">Add new staff</a>
             <a href="/addmeal">Add meal</a>
-            <a href="/pending">Pending orders</a>
-            <!--<form action="/pending" method="post"><button type="submit">Submit</button></form>-->
+            <div class="dropdown">
+                <button>Staffs</button>
+                <div class="dropdown-content">
+                    <a href="/pending">Pending orders</a>
+                    <a href="/Kitchendelivered">Delivered</a>
+                    <a href="/kitchencompletedOrders">Completed Orders</a>
+                    <a href="/kitchenconcledorders">Canceled orders</a>
+                </div>
+            </div>
             <div class="dropdown">
                 <button>Ward</button>
                 <div class="dropdown-content">
@@ -13,9 +20,6 @@
                     <a href="/wardCompletedOrders">Completed</a>
                 </div>
             </div>
-            <a href="/Kitchendelivered">Delivered</a>
-            <a href="/kitchencompletedOrders">Completed Orders</a>
-            <a href="/kitchenconcledorders">Canceled orders</a>
             <a href="/addDept">Add department</a>
             <a href="/addward">Add ward</a>
         </div>
