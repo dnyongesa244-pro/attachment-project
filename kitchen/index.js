@@ -1931,7 +1931,6 @@ app.get('/wardpending' ,isAuthenticated, async(req, res)=>{
             const check = await wards.findOne({name : loginUser.dept});
             if(loginUser.role === 'admin' || loginUser.dept === 'kitchen'){
                 const products = await wardOrders.find({action : 'pending',status : 'pending'});
-                console.log(products);
                 res.render('wardpendingorder',{
                     products : products
                 });
@@ -1941,7 +1940,9 @@ app.get('/wardpending' ,isAuthenticated, async(req, res)=>{
                     products : products
                 });
             } else{
-                res.send("Denied");
+                res.render('message',{
+                    message : "Acces denied"
+                })
             }
         }
     } catch(err){
@@ -2020,7 +2021,9 @@ app.get('/wardDelivered', isAuthenticated, async (req, res) => {
                 });
             }
         } else {
-            return res.status(403).send("You do not have permission to view this page");
+            return res.status(403).render('message',{
+                message : "Acces denied"
+            })
         }
     } catch (err) {
         console.log(err);
