@@ -19,6 +19,8 @@ const { warn, assert, count } = require('console');
 const { statfs } = require('fs');
 const { escape } = require('querystring');
 
+const totleStaff = 0;
+
 function dateNow(){
     var myDate = new Date();
     var day = myDate.getDate();
@@ -65,6 +67,21 @@ app.use(session({
     cookie : {maxAge : 24*60*60*6.9444}
 }))
 
+hbs.registerHelper('isEqual', function(value1, value2, options){
+    if(value1 === value2){
+        return options.fn(this);
+    } else{
+        return options.inverse(this);
+    }
+})
+
+app.use((req, res, next)=>{
+    if(req.session){
+        req.session._garbage = Date();
+        req.session.touch();
+    }
+    next();
+})
 function isAuthenticated(req, res, next){
     if(req.session.userId){
         return next();
@@ -410,13 +427,17 @@ app.get('/addpatient', isAuthenticated,async (req, res)=>{
         try{
             const loginUser = await staffs.findById(loginUserId);
             if(loginUser){
-                const check = await wards.find({name : loginUser.dept});
+                const check = await wards.findOne({name : loginUser.dept});
                 if(check || loginUser.role === 'admin'){
                     res.render('registerPatient', {
                         title : "Register patent",
                         ward : loginUser.dept
                     })
-                }                
+                }  else {
+                    res.render('message', {
+                        message : "Acces denied"
+                    })
+                }              
             } else{
                 res.send('user not found');
             }
@@ -511,10 +532,31 @@ app.post('/addpatient', isAuthenticated, async(req, res)=>{
 })
 
 //method to remder page for patent clearend
-app.get('/clearpatient', isAuthenticated,(req, res)=>{
-    res.render('clearpatient'),{
-        title : "Clear patient"
-    };
+app.get('/clearpatient', isAuthenticated, async(req, res)=>{
+    const loginUserId = req.session.userId;
+    if(!loginUserId){
+        return res.send("user not loged in");
+    }
+    try{
+        const loginUser = await staffs.findById(loginUserId);
+        if(!loginUser){
+            return res.send("User not found");
+        } else{
+            const check = await wards.findOne({name : loginUser.dept});
+            if(check || loginUser.role === 'admin'){
+                res.render('clearpatient'),{
+                    title : "Clear patient"
+                };
+            } else{
+                res.render('message',{
+                    message : "Acces denied"
+                })
+            }
+        }
+    } catch(err){
+        console.log(err);
+        res.send("Internal server error");
+    }
 });
 
 //method to get the patient details
@@ -528,21 +570,28 @@ app.post('/clearpatient',isAuthenticated, async(req, res)=>{
             try{
                 const loginUser = await staffs.findById(loginUserId);
                 if(loginUser){
-                    try{
-                        const check = await patient.findOne({patientNo : patientNoInfo, ward : loginUser.dept});
-                        if(check){
-                            res.render('rmpatient', {
-                                patientNo : patientNoInfo,
-                                ward : loginUser.dept,
-                                name : check.fname + " " + check.lname,
-                                patientId : check._id
-                            });
-                        } else{
-                            res.send('patient douse not exist');
+                    const check1 = await wards.findOne({name : loginUser.dept});
+                    if(check1 || loginUser.role === 'admin'){
+                        try{
+                            const check = await patient.findOne({patientNo : patientNoInfo, ward : loginUser.dept});
+                            if(check){
+                                res.render('rmpatient', {
+                                    patientNo : patientNoInfo,
+                                    ward : loginUser.dept,
+                                    name : check.fname + " " + check.lname,
+                                    patientId : check._id
+                                });
+                            } else{
+                                res.send('patient douse not exist');
+                            }
+                        } catch(err){
+                            console.log(err);
+                            res.status(500).send(err);
                         }
-                    } catch(err){
-                        console.log(err);
-                        res.status(500).send(err);
+                    } else {
+                        res.render("message",{
+                            message : 'Acces denied'
+                        })
                     }
                 } else{
                     res.send("user not found");
@@ -657,7 +706,9 @@ app.get('/kitchen', isAuthenticated, async(req, res)=>{
                 res.status(500).send("Internal server error");
             }
         } else{
-            res.send('Acces denied');
+            res.render('message',{
+                message : "Access denied"
+            });
         }
     } else{
         res.send('User not loged in');
@@ -734,7 +785,7 @@ app.get('/patients', isAuthenticated, async(req, res)=>{
     if(loginUserId){
         try{
             const loginUser = await staffs.findById(loginUserId);
-            const check = await wards.find({name : loginUser.dept})
+            const check = await wards.findOne({name : loginUser.dept})
             if(check){
                 try {
                     const patientDetails = await patient.find({ward : loginUser.dept});
@@ -759,7 +810,9 @@ app.get('/patients', isAuthenticated, async(req, res)=>{
             res.status(500).send("Internal server error");
         }
     } else{
-        res.send("User not found");
+        res.render('message',{
+            message : "Access denied"
+        })
     }
 });
 
@@ -828,13 +881,13 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
         try {
             const loginUser = await staffs.findById(loginUserId);
             if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                const routt = '/pending';
                 const deptsList = await depts.find();
                 if(ordersInfo.dept && ordersInfo.item && ordersInfo.date){
                     try{
-                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, date : ordersInfo.date})
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, date : ordersInfo.date, status : "pending"})
                         var count = 0;
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
                         })
                         try{
@@ -842,7 +895,8 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                             res.render('kitchenPending',{
                                 products : products,
                                 deptsList : deptsList,
-                                total : count
+                                total : count,
+                                routt : routt
                             })
                         } catch(err){
                             console.log(err);
@@ -854,21 +908,18 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                     }
                 } else if(ordersInfo.dept && ordersInfo.item){
                     try{
-                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item})
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, status : "pending"})
                         var count = 0;
-                        products.forEach(element=>{
-                           console.log(products.price);
-                          // console.log("hello")
-                        });
+                        
                         try{
                             products.forEach(element=>{
-                                console.log(element.price);
                                 count += element.price;
                             })
                             res.render('kitchenPending',{
                                 products : products,
                                 deptsList : deptsList,
-                                total : count
+                                total : count,
+                                routt : routt
                             })
                         } catch(err){
                             console.log(err);
@@ -880,22 +931,18 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                     }
                 } else if(ordersInfo.dept && ordersInfo.date){
                     try{
-                        const products = await orders.find({dept : ordersInfo.dept, date: ordersInfo.date})
+                        const products = await orders.find({dept : ordersInfo.dept, date: ordersInfo.date, status : "pending"})
                         var count = 0;
-                        products.forEach(element=>{
-                           console.log(products.price);
-                          // console.log("hello")
-                        });
                         try{
                             const deptsList = await depts.find({});
                             products.forEach(element=>{
-                                console.log(element.price);
                                 count += element.price;
                             })
                             res.render('kitchenPending',{
                                 products : products,
                                 deptsList : deptsList,
-                                total : count
+                                total : count,
+                                routt : routt
                             })
                         } catch(err){
                             console.log(err);
@@ -907,7 +954,7 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                     }
                 } else if(ordersInfo.date && ordersInfo.item){
                     try{
-                        const products = await orders.find({date : ordersInfo.data, item : ordersInfo.item})
+                        const products = await orders.find({date : ordersInfo.data, item : ordersInfo.item, status : "pending"})
                         var count = 0;
                         products.forEach(element=>{
                             console.log(element.price);
@@ -915,13 +962,12 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                         })
                         try{
                             const deptsList = await depts.find({});
-                            deptsList.forEach(element=>{
-                                count = count +  products.price   
-                            })
+                            
                             res.render('kitchenPending',{
                                 products : products,
                                 deptsList : deptsList,
-                                total : count
+                                total : count,
+                                routt : routt
                             })
                         } catch(err){
                             console.log(err);
@@ -933,7 +979,7 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                     }
                 }else if(ordersInfo.item){
                     try{
-                        const products = await orders.find({item : ordersInfo.item})
+                        const products = await orders.find({item : ordersInfo.item, status : "pending"})
                         var count = 0;
                         products.forEach(element=>{
                             console.log(element.price);
@@ -950,15 +996,15 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                 }else if(ordersInfo.dept){
                     try{
                         const deptsList = await depts.find();
-                        const products = await orders.find({dept : ordersInfo.dept})
+                        const products = await orders.find({dept : ordersInfo.dept, status : "pending"})
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
                         })
                         res.render('kitchenPending',{
                             products : products,
                             total : count,
-                            deptsList : deptsList
+                            deptsList : deptsList,
+                            routt : routt
                         })
                     } catch(err){
                         console.log(err);
@@ -967,16 +1013,16 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                 } else if(ordersInfo.date){
                     try{
                         const deptsList = await depts.find();
-                        const products = await orders.find({date : ordersInfo.date})
+                        const products = await orders.find({date : ordersInfo.date, status : "pending"})
                         var count = 0;
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
                         })
                         res.render('kitchenPending',{
                             products : products,
                             total : count,
-                            deptsList : deptsList
+                            deptsList : deptsList,
+                            routt : routt
                         })
                     } catch(err){
                         console.log(err);
@@ -984,17 +1030,17 @@ app.post('/pending', isAuthenticated, async(req, res)=>{
                     }
                 } else{
                     try{
-                        const products = await orders.find({})
+                        const products = await orders.find({status : "pending"})
                         const deptsList = await depts.find();
                         var count = 0;
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
                         })
                         res.render('kitchenPending',{
                             products : products,
                             total : count,
-                            deptsList : deptsList
+                            deptsList : deptsList,
+                            routt : routt
                         })
                     } catch(err){
                         console.log(err);
@@ -1017,19 +1063,21 @@ app.get('/pending',isAuthenticated,async(req, res)=>{
         try{
             const loginUser = await staffs.findById(loginUserId);
             if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                const routt = '/pending';
                 try{
                     const products = await orders.find({status : 'pending'});
                     var count = 0;
                     try{
                         const deptsList = await depts.find({});
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
                         })
+                        const routt = '/pending';
                         res.render('kitchenPending',{
                             products : products,
                             total : count,
-                            deptsList : deptsList
+                            deptsList : deptsList,
+                            routt : routt
                         })
                     } catch(err){
                         console.log(err);
@@ -1249,6 +1297,189 @@ app.get('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
     
 })
 
+app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
+    const ordersInfo = req.body;
+    const loginUserId  = req.session.userId;
+    //console.log(ordersInfo.date);
+    if(loginUserId){
+        try {
+            const loginUser = await staffs.findById(loginUserId);
+            if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                const routt = '/pending';
+                const deptsList = await depts.find();
+                if(ordersInfo.dept && ordersInfo.item && ordersInfo.date){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, date : ordersInfo.date, status : "pending"})
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        try{
+                            const deptsList = await depts.find({});
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.dept && ordersInfo.item){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, status : "pending"})
+                        var count = 0;
+                        
+                        try{
+                            products.forEach(element=>{
+                                count += element.price;
+                            })
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.dept && ordersInfo.date){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept, date: ordersInfo.date, status : "pending"})
+                        var count = 0;
+                        try{
+                            const deptsList = await depts.find({});
+                            products.forEach(element=>{
+                                count += element.price;
+                            })
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.date && ordersInfo.item){
+                    try{
+                        const products = await orders.find({date : ordersInfo.data, item : ordersInfo.item, status : "pending"})
+                        var count = 0;
+                        products.forEach(element=>{
+                            console.log(element.price);
+                            count += element.price;
+                        })
+                        try{
+                            const deptsList = await depts.find({});
+                            
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }else if(ordersInfo.item){
+                    try{
+                        const products = await orders.find({item : ordersInfo.item, status : "pending"})
+                        var count = 0;
+                        products.forEach(element=>{
+                            console.log(element.price);
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }else if(ordersInfo.dept){
+                    try{
+                        const deptsList = await depts.find();
+                        const products = await orders.find({dept : ordersInfo.dept, status : "pending"})
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.date){
+                    try{
+                        const deptsList = await depts.find();
+                        const products = await orders.find({date : ordersInfo.date, status : "pending"})
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else{
+                    try{
+                        const products = await orders.find({status : "pending"})
+                        const deptsList = await depts.find();
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }
+            } else{
+                res.send("You cant acces this page");
+            }
+        }  catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    }
+});
 //rout to view all deliverd order by kitchen department
 app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
@@ -1261,10 +1492,20 @@ app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
         if(!loginUser){
             return res.send("User not found");
         } else if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+            const deptsList = await depts.find();
+            const routt = 'Kitchendelivered';
             const products = await orders.find({status : "delivered", action : 'delivered'});
             console.log(products);
-            res.render('Kitchendelivered',{
-                products : products
+            var count = 0;
+            products.forEach(element=>{
+                count += element.price;
+            })
+            res.render('kitchenPending',{
+                products : products,
+                routt : routt,
+                deptsList : deptsList,
+                total : count,
+                routt : routt
             })
         }
     } catch(err){
@@ -1273,6 +1514,190 @@ app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
     }
 })
 
+
+app.post('/Kitchendelivered', isAuthenticated, async(req, res)=>{
+    const ordersInfo = req.body;
+    const loginUserId  = req.session.userId;
+    //console.log(ordersInfo.date);
+    if(loginUserId){
+        try {
+            const loginUser = await staffs.findById(loginUserId);
+            if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
+                const routt = '/Kitchendelivered';
+                const deptsList = await depts.find();
+                if(ordersInfo.dept && ordersInfo.item && ordersInfo.date){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, date : ordersInfo.date, status : 'delivered'})
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        try{
+                            const deptsList = await depts.find({});
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.dept && ordersInfo.item){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, status : 'delivered'})
+                        var count = 0;
+                        
+                        try{
+                            products.forEach(element=>{
+                                count += element.price;
+                            })
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.dept && ordersInfo.date){
+                    try{
+                        const products = await orders.find({dept : ordersInfo.dept, date: ordersInfo.date, status : 'delivered'})
+                        var count = 0;
+                        try{
+                            const deptsList = await depts.find({});
+                            products.forEach(element=>{
+                                count += element.price;
+                            })
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.date && ordersInfo.item){
+                    try{
+                        const products = await orders.find({date : ordersInfo.data, item : ordersInfo.item, status : 'delivered'})
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        try{
+                            const deptsList = await depts.find({});
+                            
+                            res.render('kitchenPending',{
+                                products : products,
+                                deptsList : deptsList,
+                                total : count,
+                                routt : routt
+                            })
+                        } catch(err){
+                            console.log(err);
+                            res.send("Internal server error");
+                        }
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }else if(ordersInfo.item){
+                    try{
+                        const products = await orders.find({item : ordersInfo.item, status : 'delivered'})
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }else if(ordersInfo.dept){
+                    try{
+                        const deptsList = await depts.find();
+                        const products = await orders.find({dept : ordersInfo.dept, status : 'delivered'})
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else if(ordersInfo.date){
+                    try{
+                        const deptsList = await depts.find();
+                        const products = await orders.find({date : ordersInfo.date, status : 'delivered'})
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                } else{
+                    try{
+                        const products = await orders.find({status : 'delivered'})
+                        const deptsList = await depts.find();
+                        var count = 0;
+                        products.forEach(element=>{
+                            count += element.price;
+                        })
+                        res.render('kitchenPending',{
+                            products : products,
+                            total : count,
+                            deptsList : deptsList,
+                            routt : routt
+                        })
+                    } catch(err){
+                        console.log(err);
+                        res.status(500).send("An error occured")
+                    }
+                }
+            } else{
+                res.send("You cant acces this page");
+            }
+        }  catch(err){
+            console.log(err);
+            res.status(500).send("Internal server error");
+        }
+    }
+});
 //rout to view all ouncled orders by kitche department
 app.get('/kitchenconcledorders',isAuthenticated, async(req, res)=>{
     const loginUserId  = req.session.userId;
@@ -1363,7 +1788,7 @@ app.get("/makewardorders", isAuthenticated, async(req, res)=>{
     try {
         const loginUser = await staffs.findById(loginUserId);
         if(loginUser){
-            const check = await wards.find({dept : loginUser.dept});
+            const check = await wards.findOne({name : loginUser.dept});
             if(check){
                 const products = await meals.find({});
                 const productsWithBase64Images = products.map(meal=>{
@@ -1657,25 +2082,50 @@ app.get('/wardCompletedOrders', isAuthenticated, async(req, res)=>{
         if(!loginUser){
             return res.send("User not found");
         } else{
+            const routt = 'wardCompletedOrders';
+            const deptsList = await depts.find();
             if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
                 const products = await wardOrders.find({status : 'complete', action : 'confirmed'});
                 if(products.length>0){
+                    var count = 0;
+                    products.forEach(element=>{
+                        count += element.price
+                    })
                     return res.render('wardCompletedOrders',{
-                    products : products
+                    products : products,
+                    deptsList : deptsList,
+                    routt : routt
                     })
                  } else{
-                    res.send('wardCompletedOrders');
+                    products.forEach(element=>{
+                        count += element.price
+                    })
+                    return res.render('wardCompletedOrders',{
+                    products : products,
+                    deptsList : deptsList,
+                    routt : routt
+                    })
                  }
             } else if(check){
                  const products = await wardOrders.find({ward : loginUser.dept, status : 'complete', action : 'confirmed'});
                  if(products.length>0){
-                    res.render('wardCompletedOrders',{
-                    products : products
+                    products.forEach(element=>{
+                        count += element.price
+                    })
+                    return res.render('wardCompletedOrders',{
+                    products : products,
+                    deptsList : deptsList,
+                    routt : routt
                     })
                  } else{
-                    res.render('wardCompletedOrders',{
-                        message : "No products found"
-                        })
+                    products.forEach(element=>{
+                        count += element.price
+                    })
+                    return res.render('wardCompletedOrders',{
+                    products : products,
+                    deptsList : deptsList,
+                    routt : routt
+                    })
                  }
             }
         }
@@ -1685,6 +2135,9 @@ app.get('/wardCompletedOrders', isAuthenticated, async(req, res)=>{
     }
 })
 
+app.post('/wardCompletedOrders', isAuthenticated, async(req, res)=>{
+
+})
 app.get('/account', isAuthenticated, async(req, res)=>{
     const loginUserId = req.session.userId;
     if(!loginUserId){
