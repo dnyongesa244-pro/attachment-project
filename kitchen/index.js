@@ -832,7 +832,9 @@ app.post('/concledorders', isAuthenticated, async(req, res)=>{
                 order.action = "councled";
                 try {
                     await order.save();
-                    res.send("order councled succesfuly");
+                    res.render('message',{
+                        message : "order councled succesfuly"
+                    })
                 } catch(err){
                     console.log(err);
                     res.status(500).send("Internal server error");
@@ -1253,7 +1255,9 @@ app.post('/confirmdelivery', isAuthenticated, async(req, res)=>{
                 product.action = 'confirmed';
                 product.status = "complete"
                 const check = await product.save();
-                 res.send("success");
+                res.render('message',{
+                    message : "Order Order complete"
+                })
                  console.log(product);
             }
         }
@@ -1298,9 +1302,26 @@ app.get('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
         const loginUser = await staffs.findById(loginUserId);
         if(loginUser){
             if(loginUser.dept === 'kitchen' || loginUser.role === 'admin'){
+                const deptsList = await depts.find();
+                const foodList = await meals.find();
                 const products = await orders.find({status : 'complete', action : 'confirmed'});
-                res.render('kitchencompletedOrders', {
+              /*  res.render('kitchencompletedOrders', {
                     products : products
+                })*/
+               var count = 0;
+               var num = 0;
+               const routt = "/kitchencompletedOrders";
+               products.forEach(element=>{
+                count += element.price;
+                num++;
+               })
+               res.render('kitchenDelivered', {
+                    products : products,
+                    routt : routt,
+                    deptsList : deptsList,
+                    foodList : foodList,
+                    total : count,
+                    num : num
                 })
             } else {
                 res.send("acces dennied");
@@ -1323,9 +1344,11 @@ app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
         try {
             const loginUser = await staffs.findById(loginUserId);
             if(loginUser.dept == 'kitchen' || loginUser.role == 'admin'){
-                const routt = '/pending';
+                const routt = '/kitchencompletedOrders';
                 const deptsList = await depts.find();
+                const foodList = await meals.find();
                 if(ordersInfo.dept && ordersInfo.item && ordersInfo.date){
+                    console.log("All called");
                     try{
                         const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, date : ordersInfo.date, status : "pending"})
                         var count = 0;
@@ -1350,18 +1373,20 @@ app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
                     }
                 } else if(ordersInfo.dept && ordersInfo.item){
                     try{
-                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, status : "pending"})
+                        const products = await orders.find({dept : ordersInfo.dept, item : ordersInfo.item, status : "complete"})
+
                         var count = 0;
                         
                         try{
                             products.forEach(element=>{
                                 count += element.price;
                             })
-                            res.render('kitchenPending',{
+                            res.render('kitchenDelivered',{
                                 products : products,
                                 deptsList : deptsList,
                                 total : count,
-                                routt : routt
+                                routt : routt,
+                                foodList : foodList
                             })
                         } catch(err){
                             console.log(err);
@@ -1373,18 +1398,24 @@ app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
                     }
                 } else if(ordersInfo.dept && ordersInfo.date){
                     try{
-                        const products = await orders.find({dept : ordersInfo.dept, date: ordersInfo.date, status : "pending"})
+                        const products = await orders.find({dept : ordersInfo.dept, date: ordersInfo.date, status : "complete"})
                         var count = 0;
                         try{
                             const deptsList = await depts.find({});
+                            var count = 0;
+                            var num = 0;
+                        
                             products.forEach(element=>{
                                 count += element.price;
-                            })
-                            res.render('kitchenPending',{
+                                num++;
+                             })
+                            res.render('kitchenDelivered', {
                                 products : products,
+                                routt : routt,
                                 deptsList : deptsList,
+                                foodList : foodList,
                                 total : count,
-                                routt : routt
+                                num : num
                             })
                         } catch(err){
                             console.log(err);
@@ -1396,40 +1427,44 @@ app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
                     }
                 } else if(ordersInfo.date && ordersInfo.item){
                     try{
-                        const products = await orders.find({date : ordersInfo.data, item : ordersInfo.item, status : "pending"})
+                        const products = await orders.find({date : ordersInfo.date, item : ordersInfo.item, status : "complete"})
                         var count = 0;
+                        var count = 0;
+                        var num = 0;
+                        
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
-                        })
-                        try{
-                            const deptsList = await depts.find({});
-                            
-                            res.render('kitchenPending',{
-                                products : products,
-                                deptsList : deptsList,
-                                total : count,
-                                routt : routt
-                            })
+                             num++;
+                         })
+                         res.render('kitchenDelivered', {
+                            products : products,
+                            routt : routt,
+                            deptsList : deptsList,
+                            foodList : foodList,
+                            total : count,
+                            num : num
+                         })
                         } catch(err){
                             console.log(err);
                             res.send("Internal server error");
                         }
-                    } catch(err){
-                        console.log(err);
-                        res.status(500).send("An error occured")
-                    }
                 }else if(ordersInfo.item){
                     try{
-                        const products = await orders.find({item : ordersInfo.item, status : "pending"})
+                        const products = await orders.find({item : ordersInfo.item, status : "complete"})
                         var count = 0;
+                        var num = 0;
+                        
                         products.forEach(element=>{
-                            console.log(element.price);
                             count += element.price;
+                            num++;
                         })
-                        res.render('kitchenPending',{
+                        res.render('kitchenDelivered', {
                             products : products,
-                            total : count
+                            routt : routt,
+                            deptsList : deptsList,
+                            foodList : foodList,
+                            total : count,
+                            num : num
                         })
                     } catch(err){
                         console.log(err);
@@ -1439,14 +1474,20 @@ app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
                     try{
                         const deptsList = await depts.find();
                         const products = await orders.find({dept : ordersInfo.dept, status : "pending"})
+                        var count = 0;
+                        var num = 0;
+                        
                         products.forEach(element=>{
                             count += element.price;
+                            num++;
                         })
-                        res.render('kitchenPending',{
+                        res.render('kitchenDelivered', {
                             products : products,
-                            total : count,
+                            routt : routt,
                             deptsList : deptsList,
-                            routt : routt
+                            foodList : foodList,
+                            total : count,
+                            num : num
                         })
                     } catch(err){
                         console.log(err);
@@ -1457,37 +1498,26 @@ app.post('/kitchencompletedOrders', isAuthenticated, async(req, res)=>{
                         const deptsList = await depts.find();
                         const products = await orders.find({date : ordersInfo.date, status : "pending"})
                         var count = 0;
+                        var num = 0;
+                        
                         products.forEach(element=>{
                             count += element.price;
+                            num++;
                         })
-                        res.render('kitchenPending',{
+                        res.render('kitchenDelivered', {
                             products : products,
-                            total : count,
+                            routt : routt,
                             deptsList : deptsList,
-                            routt : routt
+                            foodList : foodList,
+                            total : count,
+                            num : num
                         })
                     } catch(err){
                         console.log(err);
                         res.status(500).send("An error occured")
                     }
                 } else{
-                    try{
-                        const products = await orders.find({status : "pending"})
-                        const deptsList = await depts.find();
-                        var count = 0;
-                        products.forEach(element=>{
-                            count += element.price;
-                        })
-                        res.render('kitchenPending',{
-                            products : products,
-                            total : count,
-                            deptsList : deptsList,
-                            routt : routt
-                        })
-                    } catch(err){
-                        console.log(err);
-                        res.status(500).send("An error occured")
-                    }
+                    res.redirect(routt)
                 }
             } else{
                 res.send("You cant acces this page");
@@ -1518,7 +1548,7 @@ app.get('/Kitchendelivered', isAuthenticated, async(req, res)=>{
             products.forEach(element=>{
                 count += element.price;
             })
-            res.render('kitchenPending',{
+            res.render('Kitchendelivered',{
                 products : products,
                 routt : routt,
                 deptsList : deptsList,

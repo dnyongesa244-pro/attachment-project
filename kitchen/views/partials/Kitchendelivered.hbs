@@ -1,4 +1,4 @@
-<table class="listtable">
+<!--<table class="listtable">
    <tr>
       <th>Name</th>
       <th>dept</th>
@@ -18,5 +18,44 @@
        {{/each}}   
    </tr>
    <tr>
+   </tr>
+</table>-->
+<table class="listtable">
+   <tr>
+      <th>Name</th>
+      <th>dept</th>
+      <th>Meal</th>
+      <th>price</th>
+       <th>Date</th>
+      <th>Status</th>
+   </tr>
+
+         {{#each products}}
+      <!-- <div  class="product">
+         <h2>Name : {{this.name}}</h2>
+          <h3>{{this.item}} {{this.price}}</h3>
+          <h4>{{this.dept}}</h4>
+       </div>-->
+       <tr>
+         <td>{{this.name}}</td>
+         <td>{{this.dept}}</td>
+         <td>{{this.item}}</td>
+         <td>{{this.price}}</td>
+         <td>{{this.date}}</td>
+         <td>{{this.status}}</td>
+         <!--<td class="button-group">
+
+            
+            <form action="/ktchnnmarkdeliverd" method="post">
+               <input type="hidden" name="orderId" id="orderId" value="{{this._id}}">
+               <button type="submit">Mark as deliverd</button>
+            </form>
+            <form action={{routt}} method="post">
+               <button type="submit">reject</button>
+            </form>
+         </td>-->
+       </tr>
+       {{/each}}   
+       <h3>TotalNo : {{num}} &nbsp;&nbsp;&nbsp;&nbsp; Total price : {{total}} </h3>
    </tr>
 </table>
