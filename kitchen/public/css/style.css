@@ -261,3 +261,8 @@ h2 {
   width: fit-content;
   background-color: #cacfcd;
 }
+
+span {
+  font-weight: bold;
+  font-family: cursive;
+}

@@ -29,10 +29,10 @@
                <!--<input type="hidden" name="name" id="name" value="{{this.name}}">
                <input type="hidden" name="dept" id="dept" value="{{this.dept}}">
                <input type="hidden" name="price" id="price" value="{{this.price}}">-->
-               <input type="hidden" name="orderId" id="orderId" value="{{this.id}}">
+               <input type="hidden" name="orderId" id="orderId" value="{{this._id}}">
                <button type="submit">Mark as deliverd</button>
             </form>
-            <form action="" method="post">
+            <form action={{routt}} method="post">
              <!--  <input type="hidden" name="name" id="name" value="{{this.name}}">
                <input type="hidden" name="dept" id="dept" value="{{this.dept}}">
                <input type="hidden" name="price" id="price" value="{{this.price}}">
@@ -42,14 +42,6 @@
          </td>
        </tr>
        {{/each}}   
-       <h1>Total : {{total}}</h1>
-   </tr>
-   <tr>
-     <!-- {{#each deptsList}}
-      <select name="dept" id="dept">
-         <option value="{{this.deptName}}">{{this.deptName}}</option>
-      </select>
-      <td>{{this.deptName}}</td>
-      {{/each}}  -->
+       <h3>TotalNo : {{num}} &nbsp;&nbsp;&nbsp;&nbsp; Total price : {{total}} </h3>
    </tr>
 </table>

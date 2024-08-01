@@ -1,0 +1,20 @@
+<div class="search">
+    <form action={{routt}} method="post" >
+                <label for="ward">Select ward</label>
+                <select name="ward" id="ward">
+                    <option value="">All</option>
+                    {{#each wardList}}
+                      <option value="{{this.name}}">{{this.name}}</option>
+                    {{/each}}  
+                </select>
+                <label for="item">select food </label>
+                <select name="item" id="dept">
+                    <option value="">All</option>
+                    {{#each foodlist}}
+                      <option value="{{this.name}}">{{this.name}}</option>
+                    {{/each}}  
+                </select>
+                <input type="date" name="date">r
+                <button type="submit">Filter</button>
+    </form>
+</div>

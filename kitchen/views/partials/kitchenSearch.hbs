@@ -1,13 +1,28 @@
 <div class="search">
     <form action={{routt}} method="post" >
                <!-- <input type="text" id="deptSearch" placeholder="search department" onkeyup="filterDepartments()">-->
+                <!--<label for="dept">Select department</label>
                 <select name="dept" id="dept">
                     <option value="">All</option>
                      {{#each deptsList}}
                         <option value="{{this.deptName}}">{{this.deptName}}</option>
                       {{/each}}
+                </select>-->
+                <label for="dept">Select department</label>
+                <select name="dept" id="dept">
+                     <option value="">All</option>
+                     {{#each deptsList}}
+                     <option value="{{this.deptName}}">{{this.deptName}}</option>
+                     {{/each}}
                 </select>
-                <input  type="text" name="item" i placeholder="Enter foodname here">
+
+                <label for="item">select food </label>
+                <select name="item" id="dept">
+                    <option value="">All</option>
+                    {{#each foodList}}
+                      <option value="{{this.name}}">{{this.name}}</option>
+                    {{/each}}  
+                </select>
                 <input type="date" name="date">r
                 <button type="submit">Filter</button>
     </form>

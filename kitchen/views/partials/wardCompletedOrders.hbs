@@ -1,3 +1,5 @@
+<h3>Total  : Ksh.{{total}}</h3>
+
 <table class="listtable">
    <tr>
       <th>Made by</th>
@@ -5,6 +7,7 @@
       <th>status</th>
       <th>meal</th>
       <th>price</th>
+      <th>Date</th>
      <!-- <th>Action</th>-->
    </tr>
 
@@ -15,12 +18,13 @@
          <td>{{this.status}}</td>
          <td>{{this.meal}}</td>
          <td>ksh.{{this.price}}</td>
-         <td>
-           <!-- <form action="/confirmwardDelivery" method="post">
+       <!--   <td>
+           <form action="/confirmwardDelivery" method="post">
                  <input type="hidden" name="id" value="{{this._id}}">
                  <button type="submit">Confirn</button>
-            </form>-->
-         </td>
+            </form>
+         </td>-->
+         <td>{{this.date}}</td>
        </tr>
        {{/each}}   
    </tr>
