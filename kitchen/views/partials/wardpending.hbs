@@ -2,23 +2,29 @@
    <tr>
       <th>Made by</th>
       <th>Ward</th>
-      <th>status</th>
-      <th>meal</th>
-      <th>price</th>
-      <th>date</th>
+      <th>Status</th>
+      <th>Meal</th>
+      <th>Patients</th>
+      <th>Date</th>
+      <th>Price</th>
+      <th>Action</th>
    </tr>
 
-         {{#each products}}
-       <tr>
-         <td>{{this.requester}}</td>
-         <td>{{this.ward}}</td>
-         <td>{{this.status}}</td>
-         <td>{{this.meal}}</td>
-         <td>ksh.{{this.price}}</td>
-         <td>{{this.date}}</td>
-       </tr>
-       {{/each}}   
-   </tr>
+   {{#each products}}
    <tr>
+      <td>{{this.requester}}</td>
+      <td>{{this.ward}}</td>
+      <td>{{this.status}}</td>
+      <td>{{this.meal}}</td>
+      <td>{{this.totalPatients}}</td>
+      <td>{{this.date}}</td>
+      <td>ksh.{{this.price}}</td>
+      <td class="button-group">
+         <form action="/confirmwardDelivery" method="post">
+             <input type="hidden" name="id" value="{{this._id}}">
+             <button type="submit">Confirm Delivered</button>
+         </form>
+      </td>
    </tr>
+   {{/each}}
 </table>

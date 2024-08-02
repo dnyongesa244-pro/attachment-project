@@ -10,11 +10,11 @@
                 <label for="item">select food </label>
                 <select name="item" id="dept">
                     <option value="">All</option>
-                    {{#each foodlist}}
+                    {{#each foodList}}
                       <option value="{{this.name}}">{{this.name}}</option>
                     {{/each}}  
                 </select>
-                <input type="date" name="date">r
+                <input type="date" name="date">
                 <button type="submit">Filter</button>
     </form>
 </div>

@@ -1,0 +1,32 @@
+<table class="listtable">
+   <tr>
+      <th>name</th>
+      <th>username</th>
+      <th>department</th>
+      <th>email</th>
+      <th>Phone No</th>
+      <th>Role</th>
+      <th>Action</th>
+   </tr>
+
+   {{#each allStaffs}}
+   <tr>
+      <td>{{this.fname}} {{this.sname}} {{this.lname}}</td>
+      <td>{{this.username}}</td>
+      <td>{{this.dept}}</td>
+      <td>{{this.email}}</td>
+      <td>{{this.phoneNo}}</td>
+      <td>{{this.role}}</td>
+      <td class="button-group">
+         <form action="/resetPassword" method="post">
+             <input type="hidden" name="id" value="{{this._id}}">
+             <button type="submit">Reset password</button>
+         </form>
+        <!-- <form action="/rejectWardOrder" method="post">
+             <input type="hidden" name="id" value="{{this._id}}">
+             <button type="submit">Reject Order</button>
+         </form>-->
+      </td>
+   </tr>
+   {{/each}}
+</table>

@@ -4,6 +4,8 @@
       <th>Ward</th>
       <th>Status</th>
       <th>Meal</th>
+      <th>Patients</th>
+      <th>Date</th>
       <th>Price</th>
       <th>Action</th>
    </tr>
@@ -14,13 +16,15 @@
       <td>{{this.ward}}</td>
       <td>{{this.status}}</td>
       <td>{{this.meal}}</td>
+      <td>{{this.totalPatients}}</td>
+      <td>{{this.date}}</td>
       <td>ksh.{{this.price}}</td>
       <td class="button-group">
          <form action="/deliverWardOrder" method="post">
              <input type="hidden" name="id" value="{{this._id}}">
              <button type="submit">Confirm Delivered</button>
          </form>
-         <form action="/rejectOrder" method="post">
+         <form action="/rejectWardOrder" method="post">
              <input type="hidden" name="id" value="{{this._id}}">
              <button type="submit">Reject Order</button>
          </form>

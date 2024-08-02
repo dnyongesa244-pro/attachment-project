@@ -1,0 +1,40 @@
+<main class="form">
+    <div>
+        <form action="/edditAccount" method="post">
+            <label for="fname">First Name</label>
+            <input type="text" id="fname" name="firstname" value="{{personInfo.fname}}" readonly>
+
+            <label for="sname">Second name</label>
+            <input type="text" id="fname" name="firstname" value="{{personInfo.sname}}" readonly>
+
+            <label for="lname">Last name</label>
+            <input type="text" name="lname" value="{{personInfo.lname}}" readonly>
+
+            <label for="username">Username</label>
+            <input type="text"  name="username" value="{{personInfo.username}}" readonly>
+
+            <label for="dept">Department</label>
+            <input type="text" name="dept" value="{{personInfo.dept}}" >
+
+            <label for="email">Email</label>
+            <input type="text" name="email" value="{{personInfo.email}}">
+
+           <label for="phoneNo">Phone No</label>
+            <input type="text" name="phoneNo" value="{{personInfo.phoneNo}}"> 
+ 
+            <label for="role">Role</label>
+            <select name="role">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+            </select>  
+            <br>
+            <br>
+             
+            <label for="password">password</label >
+            <input type="text" name="password" value="{{personInfo.password}}">
+
+            <input type="hidden" name="id" value="{{personInfo.id}}">
+          <input type="submit" value="Submit">
+        </form>
+    </div>
+</main>
