@@ -1,24 +1,28 @@
 <header>
     <nav>
        <div class="topnav" id="myTopnav">
-          <a href="/" class="active">Home</a>
-          <a href="/myorders">staff</a>
-          <a href="/ward">ward</a>
-          <a href="#about">About</a>
-          <a href="/kitchen">kitchen</a>
-          <a href="account">Acount</a>
-          <a href="javascript:void(0);" class="icon" onclick="myFunction()"><i class="fa fa-bars"></i>
-  </a>
-</div>
+           <div class="nav-links">
+               <a href="/" class="active">Home</a>
+               <a href="/myorders">Staff</a>
+               <a href="/ward">Ward</a>
+               <a href="#about">About</a>
+               <a href="/kitchen">Kitchen</a>
+               <a href="account">Account</a>
+           </div>
+           <div class="nav-user">
+               <h2>{{name}}</h2>
+               <a href="javascript:void(0);" class="icon" onclick="myFunction()"><i class="fa fa-bars"></i></a>
+           </div>
+       </div>
     </nav>
 </header>
 <script>
     function myFunction() {
-  var x = document.getElementById("myTopnav");
-  if (x.className === "topnav") {
-    x.className += " responsive";
-  } else {
-    x.className = "topnav";
-  }
-}
+        var x = document.getElementById("myTopnav");
+        if (x.className === "topnav") {
+            x.className += " responsive";
+        } else {
+            x.className = "topnav";
+        }
+    }
 </script>

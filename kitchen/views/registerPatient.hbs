@@ -4,40 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}}</title>
+    <style>
+        /* Reset some basic elements for better cross-browser consistency */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            height: 100%;
+        }
+
+        /* Container for the form and content */
+        .container {
+            display: flex;
+            margin-top: 60px; /* Adjust margin to account for fixed header height */
+        }
+
+        /* Content area */
+        .content {
+            margin-left: 200px;
+            padding: 20px;
+            flex: 1;
+            background-color: rgb(217, 203, 230);
+            height: 100vh;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        /* Style the form elements */
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        /* Style the labels */
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Style the input fields */
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        /* Style the buttons */
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Style for reset button */
+        button[type="reset"] {
+            background-color: #f44336;
+        }
+
+        button[type="reset"]:hover {
+            background-color: #e41f1f;
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            .container {
+                flex-direction: column;
+                margin-top: 20px; /* Adjust margin for smaller screens */
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
     {{>header}}
     <div class="container">
         {{>wardnav}}
         <div class="content">
-                <table>
-                   <form action="/addpatient" method="post">
-            <tr>
-                <th><label for="fname">First name</label></th>
-                <td><input type="text" name="fname" required></td>
-            </tr>
-            <tr>
-                <th><label for="lname">Last name</label></th>
-                <td><input type="text" name="lname" required></td>
-            </tr>
-            <tr>
-                <th><label for="patientNo">PatientNo</label></th>
-                <td><input type="text" name="patientNo" required></td>
-            </tr>
-            <tr>
-                <th><label for="ward">ward</label></th>
-                
-                <td><input type="text" name="ward" id="ward" value="{{ward}}" readonly required></td>     
-                </select>
-
-            </tr>
-            <tr>
-                <th><button type="submit">Submit</button></th>
-                <th><button type="reset">Reset</button></th>
-            </tr>
-            
-        </form>
-    </table>
+            <table>
+                <form action="/addpatient" method="post">
+                    <tr>
+                        <th><label for="fname">First name</label></th>
+                        <td><input type="text" name="fname" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="lname">Last name</label></th>
+                        <td><input type="text" name="lname" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="patientNo">PatientNo</label></th>
+                        <td><input type="text" name="patientNo" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="ward">Ward</label></th>
+                        <td><input type="text" name="ward" id="ward" value="{{ward}}" readonly required></td>     
+                    </tr>
+                    <tr>
+                        <th><button type="submit">Submit</button></th>
+                        <th><button type="reset">Reset</button></th>
+                    </tr>
+                </form>
+            </table>
         </div>
     </div>
 </body>

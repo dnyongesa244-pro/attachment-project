@@ -6,6 +6,10 @@
   top: 0;
   width: 100%;
   z-index: 1000; /* Ensure it stays on top of other elements */
+  display: flex;
+  justify-content: space-between; /* Space out the links and the user info */
+  align-items: center; /* Vertically align items */
+  padding: 0 10px; /* Add some padding */
 }
 
 /* Style the links inside the navigation bar */
@@ -19,15 +23,17 @@
   font-size: 17px;
 }
 
-.product {
-  border: 1px solid #998e8e;
-  padding: 10px;
-  margin: 10px;
-  display: inline-block;
+/* Ensure the .nav-user section appears on the right */
+.nav-user {
+  display: flex;
+  align-items: center; /* Vertically align items */
 }
-.product img {
-  max-width: 200px;
-  max-height: 200px;
+
+.nav-user h2 {
+  color: #f2f2f2;
+  margin: 0;
+  padding-right: 16px; /* Add some padding to the right of the text */
+  font-size: 17px;
 }
 
 /* Change the color of links on hover */
@@ -73,6 +79,18 @@
       display: block;
       text-align: left;
   }
+}
+
+.product {
+  border: 1px solid #998e8e;
+  padding: 10px;
+  margin: 10px;
+  display: inline-block;
+}
+
+.product img {
+  max-width: 200px;
+  max-height: 200px;
 }
 
 .orders {
@@ -141,7 +159,6 @@ h2 {
   background-color: rgb(217, 203, 230);
   height: 100vh;
 }
-
 
 .listtable {
   font-family: Arial, Helvetica, sans-serif;
@@ -224,8 +241,6 @@ h2 {
   background-color: #575757;
 }
 
-
-
 .form input[type=text], select {
   width: 100%;
   padding: 12px 20px;
@@ -266,3 +281,5 @@ span {
   font-weight: bold;
   font-family: cursive;
 }
+
+

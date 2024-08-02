@@ -4,67 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        table {
+            width: 80%; /* Adjust width as needed */
+            max-width: 800px; /* Ensures table doesn’t get too wide */
+            margin: 0 auto; /* Centers the table horizontally */
+            border-collapse: collapse;
+            background-color: #fff; /* Table background color */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional shadow for better visual separation */
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #9e758c;
+            color: #fff;
+        }
+
+        input[type="text"], input[type="password"], input[type="email"], select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #04AA6D;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button a {
+            color: white;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
     {{>header}}
     <div class="container">
         {{>kitchennav}}
         <div class="content"> 
-              <table>
-               <form action="/registernew" method="post">
-                <tr>
-                    <th><label for="fname">First name</label></th>
-                    <td><input type="text" name="fname" required></td>
-                </tr>
-                <tr>
-                    <th><label for="sname">Second name</label></th>
-                    <td><input type="text" name="sname" placeholder="optional"></td>
-                </tr>
-                <tr>
-                    <th><label for="lname">Last name</label></th>
-                    <td><input type="text" name="lname" required></td>
-                </tr>
-                <tr>
-                    <th><label for="username">Username</label></th>
-                    <td><input type="text" name="username" required></td>
-                </tr>
-                <tr>
-                    <th><label for="dept">Department</label></th>
-                    <td>
-                        <select name="dept" id="dept">
-                        {{#each deptt}}
-                        <option value="{{this.deptName}}">{{this.deptName}}</option>
-                        {{/each}}
-                    </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="email">Email</label></th>
-                    <td><input type="email" name="email" required></td>
-                </tr>
-                <tr>
-                    <th><label for="phoneNo">Phone No</label></th>
-                    <td><input type="text" name="phoneNo" required></td>
-                </tr>
-                <tr>
-                    <th><label for="password">Passsword</label></th>
-                    <td><input type="password" name="password" required></td>
-                </tr>
-                <tr>
-                    <th><label for="role">Role</label></th>
-                    <td>
-                        <select name="role" id="role">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th><button type="submit">Save</button></th>
-                    <th><button type="reset"><a href="reset">home</a></button></th>
-                </tr>
-        </form>
-    </table> 
+            <table>
+                <form action="/registernew" method="post">
+                    <tr>
+                        <th><label for="fname">First name</label></th>
+                        <td><input type="text" name="fname" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="sname">Second name</label></th>
+                        <td><input type="text" name="sname" placeholder="optional"></td>
+                    </tr>
+                    <tr>
+                        <th><label for="lname">Last name</label></th>
+                        <td><input type="text" name="lname" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="username">Username</label></th>
+                        <td><input type="text" name="username" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="dept">Department</label></th>
+                        <td>
+                            <select name="dept" id="dept">
+                                {{#each deptt}}
+                                <option value="{{this.deptName}}">{{this.deptName}}</option>
+                                {{/each}}
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="email">Email</label></th>
+                        <td><input type="email" name="email" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="phoneNo">Phone No</label></th>
+                        <td><input type="text" name="phoneNo" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="password">Password</label></th>
+                        <td><input type="password" name="password" required></td>
+                    </tr>
+                    <tr>
+                        <th><label for="role">Role</label></th>
+                        <td>
+                            <select name="role" id="role">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><button type="submit">Save</button></th>
+                        <th><button type="reset"><a href="reset">Home</a></button></th>
+                    </tr>
+                </form>
+            </table> 
         </div>
     </div>   
 </body>
